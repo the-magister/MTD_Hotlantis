@@ -41,6 +41,9 @@ bool MTD_ESPHelper::begin( String name, void (*processMessages)(String topic, St
 	for ( byte i = 0; i < ENTRIESIN(topicStatus); i++ )
 		ESPHelper::addSubscription(topicStatus[i].c_str());
 	
+	// process Serial commands
+	Serial.setTimeout(100);
+	
 	return( ESPHelper::begin() );
 }
 
@@ -48,7 +51,7 @@ int MTD_ESPHelper::loop( ) {
 	// add some riders, as-needed
 	
 	// heartbeat
-	static Metro heartBeat(30000UL);
+	static Metro heartBeat(60000UL);
 	if( heartBeat.check() ) {
 		Serial << this->myName << ". comms: ";
 		switch( ESPHelper::getStatus() ) {
@@ -57,17 +60,35 @@ int MTD_ESPHelper::loop( ) {
 			case WIFI_ONLY: Serial << "+WiFi -mqtt"; break;
 			case FULL_CONNECTION: Serial << "+WiFi +MQTT"; break;
 		}
-		Serial << endl;      
-		
-		ESPHelper::listSubscriptions();
+		Serial << " at " << millis()/1000/60 << " min." << endl;      
 	}
 
+	// serial command?
+	if( Serial.available() ) {
+		
+		String in = Serial.readStringUntil('\0');
+		Serial << "Serial received: [" << in << "].  ";
+		
+		int split = in.indexOf('=');
+		if( split == - 1) {
+			Serial << "Parse error.  Enter <topic>=<value>, e.g. nyc/mtd/rail/A=1" << endl;
+		} else {
+			Serial << "Parsed successfully." << endl;
+			// split
+			String topic = in.substring(0,split);
+			String message = in.substring(split+1);
+			// send, but not retained
+			this->pub(topic, message, false);
+		}
+	}
+	
 	// call for fundamental activity
+	
 	return( ESPHelper::loop() );
 }
 
 
-void MTD_ESPHelper::publish(String topic, String payload, bool retain) {
+void MTD_ESPHelper::pub(String topic, String payload, bool retain) {
 	Serial << this->myName;
 	
 	if( ESPHelper::getStatus() == FULL_CONNECTION ) {
@@ -83,10 +104,13 @@ void MTD_ESPHelper::publish(String topic, String payload, bool retain) {
 	Serial << topic << "]=[" << payload << "]" << endl;
 }
 
-bool MTD_ESPHelper::addSubscription(String topic) {
+/*
+This code is super fucking dangerous.
+bool MTD_ESPHelper::sub(String topic) {
 	Serial << this->myName << ". subscribing:" << topic << endl;
-	return( ESPHelper::addSubscription(topic.c_str()) );
+	return( ESPHelper::addSubscription(topic.c_str()));
 }
+*/
 
 const char* FSfile = "/mtd_topics.json";
 String MTD_ESPHelper::loadTopic(String key) {

@@ -18,10 +18,10 @@ public:
 	int loop();
 	
 	// publishing sugar
-	void publish(String topic, String payload, bool retain=true);
+	void pub(String topic, String payload, bool retain=true);
 	
 	// subscribing sugar
-	bool addSubscription(String topic);
+//	bool sub(const String topic);
 	
 	// topics and messages
 	String loadTopic(String key);
@@ -70,7 +70,7 @@ public:
 		"allyall", 		// interaction is pervasive
 		"fanfare" 		// go nuts
 	};
-
+	
 private:
 
 	String myName;

@@ -736,9 +736,10 @@ input: NA
 output: NA
 */
 void ESPHelper::resubscribe(){
+	Serial.println("ESPHelper.  Re-subscribing...");
 	for(int i = 0; i < MAX_SUBSCRIPTIONS; i++){
 		if(_subscriptions[i].isUsed){
-//			Serial.println(_subscriptions[i].topic);
+			Serial.println(_subscriptions[i].topic);
 			subscribe(_subscriptions[i].topic, _qos);
 			yield();
 		}
