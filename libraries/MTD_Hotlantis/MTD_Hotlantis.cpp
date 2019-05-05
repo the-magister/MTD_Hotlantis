@@ -37,17 +37,13 @@ bool MTD_ESPHelper::begin( String name, void (*processMessages)(String topic, St
 	pinMode(BUILTIN_LED, OUTPUT);
 	ESPHelper::enableHeartbeat(BUILTIN_LED);
 
-	// subscribe to status topics
-	for ( byte i = 0; i < ENTRIESIN(topicStatus); i++ )
-		ESPHelper::addSubscription(topicStatus[i].c_str());
-	
 	// process Serial commands
 	Serial.setTimeout(100);
 	
 	return( ESPHelper::begin() );
 }
 
-int MTD_ESPHelper::loop( ) {
+int MTD_ESPHelper::loop(boolean publishSerialCommands) {
 	// add some riders, as-needed
 	
 	// heartbeat
@@ -64,7 +60,7 @@ int MTD_ESPHelper::loop( ) {
 	}
 
 	// serial command?
-	if( Serial.available() ) {
+	if( publishSerialCommands && Serial.available() ) {
 		
 		String in = Serial.readStringUntil('\0');
 		Serial << "Serial received: [" << in << "].  ";
@@ -112,20 +108,19 @@ bool MTD_ESPHelper::sub(String topic) {
 }
 */
 
-const char* FSfile = "/mtd_topics.json";
-String MTD_ESPHelper::loadTopic(String key) {
+const char* FSfile = "/mtd.json";
+String MTD_ESPHelper::loadStuff(String key) {
     ESPHelperFS::begin();
     String ret = ESPHelperFS::loadKey(key.c_str(), FSfile);
     ESPHelperFS::end();	
 	
 	return(ret);
 }
-void MTD_ESPHelper::saveTopic(String key, String value) {
+void MTD_ESPHelper::saveStuff(String key, String value) {
     ESPHelperFS::begin();
     ESPHelperFS::addKey(key.c_str(), value.c_str(), FSfile);
     ESPHelperFS::end();
 }
-
 
 void MTD_ESPHelper::MQTTcallback(char* topic, byte* payload, unsigned int length) {
 	// String class is much easier to work with

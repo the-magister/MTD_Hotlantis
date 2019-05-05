@@ -28,14 +28,14 @@ void setup() {
   button.interval(5); // interval in ms
 
   // bootstrap new microcontrollers, if needed.
-  if ( false ) {
-    Comms.saveTopic("publishTopic", Comms.topicRail[0]);
+  if ( true ) {
+    Comms.saveStuff("publishTopic", Comms.senseMTDButton[0]);
   }
-  buttonTopic = Comms.loadTopic("publishTopic");
+  buttonTopic = Comms.loadStuff("publishTopic");
   Serial << "Startup: publishing to topic [" << buttonTopic << "]." << endl;
 
   // configure comms
-  Comms.begin("Rail", processMessages);
+  Comms.begin(buttonTopic, processMessages);
 
   Serial << "Startup: complete." << endl;
 }
@@ -47,7 +47,7 @@ void loop() {
   // update buttons
   if ( button.update() ) {
     // publish new reading.
-    Comms.publish(buttonTopic, Comms.messageBinary[button.read() == onReading]);
+    Comms.pub(buttonTopic, Comms.messageBinary[button.read() == onReading]);
   }
 }
 

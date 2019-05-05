@@ -44,7 +44,7 @@ void wakeModem() {
   Serial << "Modem WAKE." << endl;
   systemActive = true;
   
-  Comms.begin("Cannon", processMessages); delay(1);
+  Comms.begin("gwf/cannon", processMessages); delay(1);
 }
 
 void sleepModem() {
@@ -74,7 +74,7 @@ void loop() {
       sleepDelay.reset();
   
       // publish new reading.
-      Comms.publish(Comms.topicCannon[i], Comms.messageBinary[button[i].read() == onReading]); 
+      Comms.pub(Comms.senseCannon[i], Comms.messageBinary[button[i].read() == onReading]); 
     }
   }
 }

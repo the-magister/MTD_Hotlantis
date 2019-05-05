@@ -36,26 +36,29 @@ void setup() {
   Wire.begin();
 
   // configure comms
-  Comms.begin("Clock", processMessages);
+  Comms.begin("gwf/clock", processMessages);
 
   Serial << "Startup: complete." << endl;
 }
 
 void loop() {
   // comms handling
-  Comms.loop();
+  Comms.loop(false);
 
-  static Metro publishInterval(1000UL);
+  static Metro publishInterval(5000UL);
   if ( publishInterval.check() ) {
     String hour = String( Clock.getHour(h12, PM) );
     String dayofweek = String( Clock.getDoW() );
 
     // publish new reading.
-    Comms.publish(Comms.topicClock[0], hour);
-    Comms.publish(Comms.topicClock[1], dayofweek);
+    Comms.pub(Comms.senseClock[0], hour);
+    Comms.pub(Comms.senseClock[1], dayofweek);
 
     Serial << "Clock. ";
     showTime();
+
+    // once we start up, we can stop frantically trying to publish the time.
+    if( Comms.getStatus() == FULL_CONNECTION) publishInterval.interval(60UL * 1000UL);
   }
 
   // If something is coming in on the serial line, it's
@@ -75,14 +78,8 @@ void loop() {
     Clock.setMinute(Minute);
     Clock.setSecond(Second);
 
-    // Give time at next five seconds
-    for (int i = 0; i < 5; i++) {
-      showTime();
-      delay(1000);
-    }
-
+    showTime();
   }
-
 }
 
 void showTime() {

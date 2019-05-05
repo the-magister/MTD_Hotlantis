@@ -14,65 +14,81 @@ public:
 	
 	// startup and store a name for output prefacing.
 	bool begin(String myName, void (*processMessages)(String topic, String message));
+
 	// call this every loop()
-	int loop();
+	int loop(boolean publishSerialCommands=true);
 	
 	// publishing sugar
 	void pub(String topic, String payload, bool retain=true);
 	
-	// subscribing sugar
+	// subscribing sugar.  This is crazy-bad.  Don't do this.
 //	bool sub(const String topic);
 	
 	// topics and messages
-	String loadTopic(String key);
-	void saveTopic(String key, String value);
+	String loadStuff(String key);
+	void saveStuff(String key, String value);
 	
-	// overall 
-	const String topicStatus[1] = { 
-		"nyc/status" 
+	// MQTT topics, roughly grouped by structure.
+	// name is "sense" if it's a sensor the Controller should read
+	// name is "act" if it's an actuator/action the Controller can take
+	
+	// The three sides to MTD are A, B, C.
+	// Buttons on the top of MTD rails
+	const String senseMTDButton[3] = { 
+		"gwf/mtd/A/button", "gwf/mtd/B/button", "gwf/mtd/C/button" 
 	};
-	const String messageStatus[2] = { 
-		"idle", 
-		"on" 
+	// Motion sensors under the MTD arches
+	const String senseMTDMotion[3] = { 
+		"gwf/mtd/A/motion", "gwf/mtd/B/motion", "gwf/mtd/C/motion" 
+	};
+	// Lighting controllers
+	const String actMTDLight[3] = { 
+		"gwf/mtd/A/light", "gwf/mtd/B/light", "gwf/mtd/C/light"
+	};
+	// Fog machine
+	const String actMTDFog[1] = { 
+		"gwf/mtd/fog"
+	};
+
+	
+	// Buttons on the water cannon
+	const String senseCannon[2] = { 
+		"gwf/cannon/L", "gwf/cannon/R" 
+	};
+	// Pumps 
+	const String actPump[5] = { 
+		"gwf/pump/prime/A", "gwf/pump/prime/B", 
+		"gwf/pump/boost/A", "gwf/pump/boost/B", 
+		"gwf/pump/cannon"
+	};
+
+	// The three navigation beacons for Hotlantis are A, B, C.
+	// Water sprayers
+	const String actBeaconSpray[3] = { 
+		"gwf/beacon/A/spray", "gwf/beacon/B/spray", "gwf/beacon/C/spray"
+	};
+	// Flame effects
+	const String actBeaconFlame[3] = { 
+		"gwf/beacon/A/fire", "gwf/beacon/B/fire", "gwf/beacon/C/fire"
+	};
+	const String actBeaconLight[3] = { 
+		"gwf/beacon/A/light", "gwf/beacon/B/light", "gwf/beacon/C/light"
 	};
 	
-	// clock
-	const String topicClock[2] = { 
-		"nyc/clock/hour", "nyc/clock/dayofweek" 
+	// Stand-alone stuff
+	const String senseClock[2] = { 
+		"gwf/clock/hour", "gwf/clock/dayofweek" 
 	};
 	// both messageClock are bytes
 
-	// binary sensors
-	const String topicRail[3] = { 
-		"nyc/mtd/rail/A", "nyc/mtd/rail/B", "nyc/mtd/rail/C" 
-	};
-	const String topicMotion[3] = { 
-		"nyc/mtd/motion/A", "nyc/mtd/motion/B", "nyc/mtd/motion/C" 
-	};
-	const String topicCannon[2] = { 
-		"nyc/cannon/L", "nyc/cannon/R" 
-	};
+	
+	// You can send whatever you like, serialized as a string.
 	const String messageBinary[2] = { 
 		"0",	// off
 		"1" 	// on
 	};
-
-	// lighting and fire outputs
-	const String topicInteraction[3] = { 
-		"nyc/interaction/A", "nyc/interaction/B", "nyc/interaction/C" 
-	};
-	const String messageInteraction[7] = { 
-		"idle", 		// no interaction with you
-		"ohai", 		// interaction with you is initiated
-		"you", 			// interaction is localized to your area
-		"you+left", 	// interaction is localized to your area and leftward area
-		"you+right", 	// interaction is localized to your area and rightward area
-		"allyall", 		// interaction is pervasive
-		"fanfare" 		// go nuts
-	};
 	
 private:
-
 	String myName;
 	
 	void (*processMessages)(String topic, String message);
