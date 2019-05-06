@@ -35,55 +35,58 @@ public:
 	// The three sides to MTD are A, B, C.
 	// Buttons on the top of MTD rails
 	const String senseMTDButton[3] = { 
-		"gwf/mtd/A/button", "gwf/mtd/B/button", "gwf/mtd/C/button" 
-	};
+		"gwf/s/mtd/A/button", "gwf/s/mtd/B/button", "gwf/s/mtd/C/button" 
+	}; // 0,1
 	// Motion sensors under the MTD arches
 	const String senseMTDMotion[3] = { 
-		"gwf/mtd/A/motion", "gwf/mtd/B/motion", "gwf/mtd/C/motion" 
-	};
+		"gwf/s/mtd/A/motion", "gwf/s/mtd/B/motion", "gwf/s/mtd/C/motion" 
+	}; // 0,1
 	// Lighting controllers
 	const String actMTDLight[3] = { 
-		"gwf/mtd/A/light", "gwf/mtd/B/light", "gwf/mtd/C/light"
-	};
+		"gwf/a/mtd/A/light", "gwf/a/mtd/B/light", "gwf/a/mtd/C/light"
+	}; // String?
 	// Fog machine
 	const String actMTDFog[1] = { 
-		"gwf/mtd/fog"
-	};
+		"gwf/a/mtd/fog"
+	}; // 0,1
 
 	// Buttons on the water cannon
 	const String senseCannon[2] = { 
-		"gwf/cannon/L", "gwf/cannon/R" 
-	};
+		"gwf/s/cannon/L", "gwf/s/cannon/R" 
+	}; // 0,1
 	// Pumps 
 	const String actPump[5] = { 
-		"gwf/pump/prime/A", "gwf/pump/prime/B", 
-		"gwf/pump/boost/A", "gwf/pump/boost/B", 
-		"gwf/pump/cannon"
-	};
+		"gwf/a/pump/prime/A", "gwf/a/pump/prime/B", 
+		"gwf/a/pump/boost/A", "gwf/a/pump/boost/B", 
+		"gwf/a/pump/cannon"
+	}; // 0,1
 
 	// The three navigation beacons for Hotlantis are A, B, C.
 	// Water sprayers
 	// business end _is_ on the Beacons, but switching is in Pump code
 	const String actBeaconSpray[3] = { 
-		"gwf/beacon/A/spray", "gwf/beacon/B/spray", "gwf/beacon/C/spray"
-	};
+		"gwf/a/beacon/A/spray", "gwf/a/beacon/B/spray", "gwf/a/beacon/C/spray"
+	}; // 0-1
 	// Flame effects
 	const String actBeaconIgniter[3] = { 
-		"gwf/beacon/A/igniter", "gwf/beacon/B/igniter", "gwf/beacon/C/igniter"
-	};
+		"gwf/a/beacon/A/igniter", "gwf/a/beacon/B/igniter", "gwf/a/beacon/C/igniter"
+	}; // 0-1
 	const String actBeaconFlame[3] = { 
-		"gwf/beacon/A/fire", "gwf/beacon/B/fire", "gwf/beacon/C/fire"
-	};
+		"gwf/a/beacon/A/fire", "gwf/a/beacon/B/fire", "gwf/a/beacon/C/fire"
+	}; // 0-255 byte?
 	// EL wire lighting
 	const String actBeaconLight[3] = { 
-		"gwf/beacon/A/light", "gwf/beacon/B/light", "gwf/beacon/C/light"
-	};
+		"gwf/a/beacon/A/light", "gwf/a/beacon/B/light", "gwf/a/beacon/C/light"
+	}; // String?
 	
 	// Stand-alone stuff
 	const String senseClock[2] = { 
-		"gwf/clock/hour", "gwf/clock/dayofweek" 
-	};
-	// both messageClock are bytes
+		"gwf/s/clock/hour", "gwf/s/clock/dayofweek" 
+	}; // both messages are bytes
+	const String actSound[1] = { 
+		"gwf/a/sound/track"
+	}; // both messages are bytes
+	
 	
 	// You can send whatever you like, serialized as a string.
 	const String messageBinary[2] = { 
