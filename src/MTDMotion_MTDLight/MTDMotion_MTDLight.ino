@@ -90,7 +90,7 @@ void setup() {
   String myName = lightTopic;
   myName.replace("/light","");
   Comms.begin(myName, processMessages);
-  Comms.addSubscription(lightTopic.c_str());
+  Comms.sub(lightTopic);
 
   Serial << "Startup: complete." << endl;
 }

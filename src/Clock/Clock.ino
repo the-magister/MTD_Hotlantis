@@ -65,7 +65,7 @@ void loop() {
   // a time correction so set the clock accordingly.
   if (Serial.available()) {
     delay(100);
-    GetDateStuff(Year, Month, Date, DoW, Hour, Minute, Second);
+    if( ! GetDateStuff(Year, Month, Date, DoW, Hour, Minute, Second) ) return;
 
     Clock.setClockMode(false);	// set to 24h
     //setClockMode(true);	// set to 12h
@@ -78,6 +78,7 @@ void loop() {
     Clock.setMinute(Minute);
     Clock.setSecond(Second);
 
+    Serial << "clock set: " << endl;
     showTime();
   }
 }
@@ -99,7 +100,7 @@ void showTime() {
 
 }
 
-void GetDateStuff(byte& Year, byte& Month, byte& Day, byte& DoW,
+boolean GetDateStuff(byte& Year, byte& Month, byte& Day, byte& DoW,
                   byte& Hour, byte& Minute, byte& Second) {
   // Call this if you notice something coming in on
   // the serial port. The stuff coming in should be in
@@ -124,9 +125,13 @@ void GetDateStuff(byte& Year, byte& Month, byte& Day, byte& DoW,
     }
     if( timeout.check() ) {
       Serial << "Enter: YYMMDDwHHMMSSx" << endl;
-      return; // bail out
+      return(false); // bail out
     }
   }
+  InString[j] = '\0';
+
+  Serial << "Received: " << endl;
+  
   Serial.println(InString);
   // Read Year first
   Temp1 = (byte)InString[0] - 48;
@@ -154,6 +159,8 @@ void GetDateStuff(byte& Year, byte& Month, byte& Day, byte& DoW,
   Temp1 = (byte)InString[11] - 48;
   Temp2 = (byte)InString[12] - 48;
   Second = Temp1 * 10 + Temp2;
+
+  return(true);
 }
 
 // processes messages that arrive

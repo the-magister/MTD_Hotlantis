@@ -21,16 +21,16 @@ public:
 	// publishing sugar
 	void pub(String topic, String payload, bool retain=true);
 	
-	// subscribing sugar.  This is crazy-bad.  Don't do this.
-//	bool sub(const String topic);
+	// subscribing sugar.  
+	bool sub(String topic);
 	
 	// topics and messages
 	String loadStuff(String key);
 	void saveStuff(String key, String value);
 	
 	// MQTT topics, roughly grouped by structure.
-	// name is "sense" if it's a sensor the Controller should read
-	// name is "act" if it's an actuator/action the Controller can take
+	// name is "sense" if it's a sensor the Controller can read (Input)
+	// name is "act" if it's an actuator/action the Controller can take (Output)
 	
 	// The three sides to MTD are A, B, C.
 	// Buttons on the top of MTD rails
@@ -50,7 +50,6 @@ public:
 		"gwf/mtd/fog"
 	};
 
-	
 	// Buttons on the water cannon
 	const String senseCannon[2] = { 
 		"gwf/cannon/L", "gwf/cannon/R" 
@@ -64,13 +63,18 @@ public:
 
 	// The three navigation beacons for Hotlantis are A, B, C.
 	// Water sprayers
+	// business end _is_ on the Beacons, but switching is in Pump code
 	const String actBeaconSpray[3] = { 
 		"gwf/beacon/A/spray", "gwf/beacon/B/spray", "gwf/beacon/C/spray"
 	};
 	// Flame effects
+	const String actBeaconIgniter[3] = { 
+		"gwf/beacon/A/igniter", "gwf/beacon/B/igniter", "gwf/beacon/C/igniter"
+	};
 	const String actBeaconFlame[3] = { 
 		"gwf/beacon/A/fire", "gwf/beacon/B/fire", "gwf/beacon/C/fire"
 	};
+	// EL wire lighting
 	const String actBeaconLight[3] = { 
 		"gwf/beacon/A/light", "gwf/beacon/B/light", "gwf/beacon/C/light"
 	};
@@ -80,7 +84,6 @@ public:
 		"gwf/clock/hour", "gwf/clock/dayofweek" 
 	};
 	// both messageClock are bytes
-
 	
 	// You can send whatever you like, serialized as a string.
 	const String messageBinary[2] = { 
@@ -94,6 +97,9 @@ private:
 	void (*processMessages)(String topic, String message);
 	
 	void MQTTcallback(char* topic, byte* payload, unsigned int length);
+	
+	byte nSubTopic = 0;
+	String subTopics[MAX_SUBSCRIPTIONS];
 };
 
 extern MTD_ESPHelper Comms;

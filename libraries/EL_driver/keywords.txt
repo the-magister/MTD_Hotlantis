@@ -1,0 +1,9 @@
+EL_class	KEYWORD1
+ramp_light	KEYWORD2
+set_light	KEYWORD2
+update_light	KEYWORD2
+set_ramp_time	KEYWORD2
+set_max_intensity	KEYWORD2
+set_min_intensity	KEYWORD2
+set_direction	KEYWORD2
+fscale	KEYWORD2

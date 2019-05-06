@@ -100,13 +100,18 @@ void MTD_ESPHelper::pub(String topic, String payload, bool retain) {
 	Serial << topic << "]=[" << payload << "]" << endl;
 }
 
-/*
-This code is super fucking dangerous.
+// use of addSubscription(String.c_str()) is problematic, because the cast to array of char is invalid when out-of-scope.  so, waste some memory for convenience.
 bool MTD_ESPHelper::sub(String topic) {
+	if( nSubTopic >= MAX_SUBSCRIPTIONS ) {
+		Serial << "ERROR.  Too many subscriptions!" << endl;
+		return(false);
+	}
+	this->subTopics[nSubTopic] = topic;
+
 	Serial << this->myName << ". subscribing:" << topic << endl;
-	return( ESPHelper::addSubscription(topic.c_str()));
+
+	return( ESPHelper::addSubscription(this->subTopics[nSubTopic++].c_str()));
 }
-*/
 
 const char* FSfile = "/mtd.json";
 String MTD_ESPHelper::loadStuff(String key) {

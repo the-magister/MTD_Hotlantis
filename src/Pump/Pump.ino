@@ -45,17 +45,17 @@ void setup() {
   // configure comms
   if ( myRole.equals("Prime_Cannon_Sprinkler") ) {
     Comms.begin(myRole, primeCannonSprinkler);
-    Comms.addSubscription(Comms.actPump[0].c_str()); // prime A
-    Comms.addSubscription(Comms.actPump[1].c_str()); // prime B
-    Comms.addSubscription(Comms.actPump[4].c_str()); // cannon
-    Comms.addSubscription(Comms.actBeaconSpray[0].c_str()); // spray A
+    Comms.sub(Comms.actPump[0]); // prime A
+    Comms.sub(Comms.actPump[1]); // prime B
+    Comms.sub(Comms.actPump[4]); // cannon
+    Comms.sub(Comms.actBeaconSpray[0]); // spray A
   }
   else {
     Comms.begin(myRole, boostSprinklerSprinkler);
-    Comms.addSubscription(Comms.actPump[2].c_str()); // boost A
-    Comms.addSubscription(Comms.actPump[3].c_str()); // boost B
-    Comms.addSubscription(Comms.actBeaconSpray[1].c_str()); // spray B
-    Comms.addSubscription(Comms.actBeaconSpray[2].c_str()); // spray C
+    Comms.sub(Comms.actPump[2]); // boost A
+    Comms.sub(Comms.actPump[3]); // boost B
+    Comms.sub(Comms.actBeaconSpray[1]); // spray B
+    Comms.sub(Comms.actBeaconSpray[2]); // spray C
   }
 
   Serial << F("Startup complete.") << endl;
