@@ -33,6 +33,15 @@ bool MTD_ESPHelper::begin( String name, void (*processMessages)(String topic, St
 		}
 	);
 
+	// over-the-air programming
+	ESPHelper::OTA_enable();
+	ESPHelper::OTA_setPassword("safetythird");
+	
+	OTAname = name;
+	OTAname.replace("/","-");
+	Serial << "OTA enabled at: [" << OTAname << ".local]" << endl;
+	ESPHelper::OTA_setHostname(this->OTAname.c_str());
+	
 	// blinky
 	pinMode(BUILTIN_LED, OUTPUT); // D4/GPIO2
 	ESPHelper::enableHeartbeat(BUILTIN_LED);
@@ -116,14 +125,26 @@ bool MTD_ESPHelper::sub(String topic) {
 const char* FSfile = "/mtd.json";
 String MTD_ESPHelper::loadStuff(String key) {
     ESPHelperFS::begin();
+
+	if( ! SPIFFS.exists(FSfile) ) {
+		Serial << F("ERROR!  No FS.  You need to change the compiler settings to Flash Size 4M (1M SPIFFS).") << endl;
+	}
+
     String ret = ESPHelperFS::loadKey(key.c_str(), FSfile);
+	
     ESPHelperFS::end();	
 	
 	return(ret);
 }
 void MTD_ESPHelper::saveStuff(String key, String value) {
     ESPHelperFS::begin();
+
     ESPHelperFS::addKey(key.c_str(), value.c_str(), FSfile);
+	
+	if( ! SPIFFS.exists(FSfile) ) {
+		Serial << F("ERROR!  No FS.  You need to change the compiler settings to Flash Size 4M (1M SPIFFS).") << endl;
+	}
+
     ESPHelperFS::end();
 }
 

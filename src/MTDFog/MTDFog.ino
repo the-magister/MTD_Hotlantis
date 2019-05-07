@@ -1,8 +1,9 @@
 // IDE Settings:
-// Tools->Board : "WeMos D1 R2 & mini"
-// Tools->Flash Size : "4M (3M SPIFFS)"
+// Tools->Board : "LOLIN(WEMOS) D1 R2 & mini"
+// Tools->Flash Size : "4M (1M SPIFFS)"
 // Tools->CPU Frequency : "160 MHz"
 // Tools->Upload Speed : "921600"
+// Tools->Erase Flash : "Sketch Only"
 
 #include <Streaming.h>
 #include <Metro.h>
@@ -57,5 +58,3 @@ void processMessages(String topic, String message) {
   
   digitalWrite(OUTPUT_PIN, setting);
 }
-
-

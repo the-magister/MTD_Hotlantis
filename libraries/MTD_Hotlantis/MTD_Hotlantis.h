@@ -95,7 +95,7 @@ public:
 	};
 	
 private:
-	String myName;
+	String myName,OTAname;
 	
 	void (*processMessages)(String topic, String message);
 	
