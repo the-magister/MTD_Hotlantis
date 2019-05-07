@@ -37,7 +37,7 @@ Actuators provide output from the system to generate actions, behaviors and gest
 * [Pumps](src/PumpSprinkler/PumpSprinkler.ino): water jet from the cannon, water sprinklers from the Beacons
 * [MTD Lighting](src/MTDMotionLight/MTDMotionLight.ino): lighting
 * [MTD Fog](src/MTDFog/MTDFog.ino): fog machine
-* [Sound](src/Sound/Sound.ind): sound
+* [Sound](src/Sound/Sound.ino): sound
 
 ## Software Environment
 
@@ -45,11 +45,18 @@ MTD/Hotlantis is programmed in C++ within the Arduino IDE.  It is impossible to 
 
 ### MQTT PubSub Topics
 
-The Electronics functional domain has kindly provided a Arduino library, [MTD_Hotlantis](libraries/MTD_Hotlantis/MTD_Hotlantis.h), that operates the WiFi and MQTT stacks automagically.  The main objective should be to:
+The Electronics functional domain has kindly provided a Arduino library, [MTD_Hotlantis](libraries/MTD_Hotlantis/), that operates the WiFi and MQTT stacks automagically.  The main objective should be to:
 
 1. Sensor uC: Read sensors and publish sensor topics.
+	* Comms.pub("gwf/s/sensorReading","1");
 2. Controller uC: subscribe sensor topics, **integrate sensor information, define activities**, publish actuator topics.
+	* Comms.sub("gwf/s/sensorReading");
+	* *when a new topic and message arrive*:
+	* if( topic.equals("gwf/s/sensorReading") ) Comms.pub("gwf/a/floodLight",message);
 3. Actuator uC: Subscribe actuator topics and act on them.
+	* Comms.sub("gwf/a/floodLight");
+	* *when a new topic and message arrive*:
+	* if( topic.equals("gwf/a/floodLight") ) setFloodLight( message.toInt() ); 
 
 The MQTT topic hierarchy is as-follows.  See [MTD_Hotlantis.h](libraries/MTD_Hotlantis/MTD_Hotlantis.h) for specifics.
 
