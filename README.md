@@ -47,15 +47,15 @@ MTD/Hotlantis is programmed in C++ within the Arduino IDE.  It is impossible to 
 
 The Electronics functional domain has kindly provided a Arduino library, [MTD_Hotlantis](libraries/MTD_Hotlantis/), that operates the WiFi and MQTT stacks automagically.  The main objective should be to:
 
-1. Sensor uC: Read sensors and publish sensor topics.
+1. **Sensor uC**: Read sensors and publish to sensor topics.
 	* Comms.pub("gwf/s/sensorReading","1");
-2. Controller uC: subscribe sensor topics, **integrate sensor information, define activities**, publish actuator topics.
+2. **Controller uC**: subscribe to sensor topics, **integrate sensor information, define activities**, publish to actuator topics.
 	* Comms.sub("gwf/s/sensorReading");
-	* *when a new topic and message arrive*:
+	* *when a new topic and message arrives*:
 	* if( topic.equals("gwf/s/sensorReading") ) Comms.pub("gwf/a/floodLight",message);
-3. Actuator uC: Subscribe actuator topics and act on them.
+3. **Actuator uC**: Subscribe to actuator topics and act on them.
 	* Comms.sub("gwf/a/floodLight");
-	* *when a new topic and message arrive*:
+	* *when a new topic and message arrives*:
 	* if( topic.equals("gwf/a/floodLight") ) setFloodLight( message.toInt() ); 
 
 The MQTT topic hierarchy is as-follows.  See [MTD_Hotlantis.h](libraries/MTD_Hotlantis/MTD_Hotlantis.h) for specifics.
