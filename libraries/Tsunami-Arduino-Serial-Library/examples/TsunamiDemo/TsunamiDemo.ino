@@ -46,7 +46,7 @@
 #include <Tsunami.h>            // Include the Tsunami library header
 //#include <AltSoftSerial.h>    // Optional for using AltSoftSerial
 
-#define LED 13                  // our LED
+#define LED BUILTIN_LED         // our LED
 
 Tsunami tsunami;                // Our Tsunami object
 
