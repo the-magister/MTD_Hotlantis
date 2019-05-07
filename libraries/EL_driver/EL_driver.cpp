@@ -5,7 +5,6 @@
  *
  */
 
-#include "WProgram.h"
 #include "EL_driver.h"
 
 EL_class::EL_class( int ctlPin ) {

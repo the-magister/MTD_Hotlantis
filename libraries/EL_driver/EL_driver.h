@@ -9,7 +9,7 @@
 #define EL_driver_h
 
 #include <math.h>
-#include "WProgram.h"
+#include <Arduino.h>
 
 #define MINPWM 1    // don't go less than this.  looks like 20.
 #define MAXPWM 255  // don't go more than this.  some lines get flickery after this level.  looks like 200.

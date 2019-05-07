@@ -34,7 +34,7 @@ bool MTD_ESPHelper::begin( String name, void (*processMessages)(String topic, St
 	);
 
 	// blinky
-	pinMode(BUILTIN_LED, OUTPUT);
+	pinMode(BUILTIN_LED, OUTPUT); // D4/GPIO2
 	ESPHelper::enableHeartbeat(BUILTIN_LED);
 
 	// process Serial commands
