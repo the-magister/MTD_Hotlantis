@@ -25,18 +25,19 @@ The uC's have hardware-level connections to peripheral devices that fall into tw
 Sensors provide input to the system for the purposes of interactivity.  These are:
 
 * [Clock](src/Clock/Clock.ino): day-of-week and time-of-day information from a real-time clock device.
-* Cannon: two buttons on the physical cannon by the shore.
-* Buttons: three buttons atop MTD.
-* Motion: three passive, infrared (PIR) motion sensors below MTD.
+* [Cannon](src/Cannon/Cannon.ino): two buttons on the physical cannon by the shore.
+* [Buttons](src/MTDButton/MTDButton.ino): three buttons atop MTD.
+* [Motion](src/MTDMotionLight/MTDMotionLight.ino): three passive, infrared (PIR) motion sensors below MTD.
 
 ### Actuators
 
 Actuators provide output from the system to generate actions, behaviors and gestures.  These are:
 
-* Beacon: lighting, pilot igniter, flame, water sprinkler
-* Cannon: water jet
-* MTD: lighting, fog
-* Sound: sound
+* [Beacon](src/BeaconLightIgniterFlame/BeaconLightIgniterFlame.ino): lighting, pilot igniter, flame
+* [Pumps](src/PumpSprinkler/PumpSprinkler.ino): water jet from the cannon, water sprinklers from the Beacons
+* [MTD Lighting](src/MTDMotionLight/MTDMotionLight.ino): lighting
+* [MTD Fog](src/MTDFog/MTDFog.ino): fog machine
+* [Sound](src/Sound/Sound.ind): sound
 
 ## Software Environment
 
@@ -44,11 +45,11 @@ MTD/Hotlantis is programmed in C++ within the Arduino IDE.  It is impossible to 
 
 ### MQTT PubSub Topics
 
-The Electronics functional domain has kindly provided a Arduino library, [MTD_Hotlantis](libraries/MTD_Hotlantis/MTD_Hotlantis.h), that operates the WiFi and MQTT stacks automagically.  The main objective should be to 
+The Electronics functional domain has kindly provided a Arduino library, [MTD_Hotlantis](libraries/MTD_Hotlantis/MTD_Hotlantis.h), that operates the WiFi and MQTT stacks automagically.  The main objective should be to:
 
-# Sensor uC: Read sensors and publish sensor topics.
-# Controller uC: subscribe sensor topics, **integrate sensor information, define activities**, publish actuator topics.
-# Actuator uC: Subscribe actuator topics and act on them.
+1. Sensor uC: Read sensors and publish sensor topics.
+2. Controller uC: subscribe sensor topics, **integrate sensor information, define activities**, publish actuator topics.
+3. Actuator uC: Subscribe actuator topics and act on them.
 
 The MQTT topic hierarchy is as-follows.  See [MTD_Hotlantis.h](libraries/MTD_Hotlantis/MTD_Hotlantis.h) for specifics.
 
