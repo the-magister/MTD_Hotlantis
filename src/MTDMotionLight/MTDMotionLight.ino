@@ -20,8 +20,10 @@
 // wire it up
 const boolean onReading = true;
 // devices with the light shield block access to D5-D8
-#define PIN_BUTTON D3 // wire D3/GPIO0 to PIR; +3.3 with trigger; GND no trigger.
+#define PIN_MOTION D1 // wire D3/GPIO0 to PIR; +3.3 with trigger; GND no trigger.
 Bounce motion = Bounce();
+// L POT is retrigger time.  CW slow.  CCW fast. set "fastest"
+// R POT is sensitvity.  CW least.  CCW most.  set "mostest"
 
 // topics
 String motionTopic;
@@ -59,6 +61,8 @@ CRGBSet leftDeck = leftFront(LEDS_BAR + LEDS_UP, LEDS_BAR + LEDS_UP + LEDS_DECK 
 CRGBSet rightDeck = rightFront(LEDS_BAR + LEDS_UP, LEDS_BAR + LEDS_UP + LEDS_DECK - 1);
 
 void setup() {
+  delay(250); // for reprogramming window
+  
   // for local output
   Serial.begin(115200);
   Serial << endl << endl << endl << "Startup: begin." << endl;
@@ -73,7 +77,7 @@ void setup() {
   Serial << F(" done.") << endl;
 
   // enable pin.
-  motion.attach(PIN_BUTTON, INPUT);
+  motion.attach(PIN_MOTION, INPUT);
   motion.interval(5); // interval in ms
 
   // bootstrap, if needed.
@@ -95,7 +99,11 @@ void setup() {
   Serial << "Startup: complete." << endl;
 }
 
+
 void loop() {
+  // track
+  static unsigned long lastTrafficTime = millis();
+  
   // comms handling
   Comms.loop();
 
@@ -103,7 +111,34 @@ void loop() {
   if ( motion.update() ) {
     // publish new reading.
     Comms.pub(motionTopic, Comms.messageBinary[motion.read() == onReading]);
+
+    CRGB color = motion.read() == onReading ? CRGB::White : CRGB::Black;
+    
+    leftBack.fill_solid(color);
+    rightBack.fill_solid(color);
+    leftFront.fill_solid(color);
+    rightFront.fill_solid(color);
+    FastLED.show();
+
+    lastTrafficTime = millis();
   }
+
+  // are we bored yet?
+  if( (millis() - lastTrafficTime) > (10UL * 1000UL) ) {
+    // show a throbbing rainbow background
+    EVERY_N_MILLISECONDS(20) {
+      static byte hue = 0;
+      hue += 5;
+      
+      leftBack.fill_rainbow(hue, 255 / leftBack.size()); // paint
+      leftFront.fill_rainbow(hue + 128, -255 / leftFront.size());
+      rightBack = leftBack;
+      rightFront = leftFront;
+    }
+  }
+
+  // should handle lights often, too.
+  EVERY_N_MILLISECONDS(20) FastLED.show();
 }
 
 // processes messages that arrive
@@ -119,5 +154,4 @@ void processMessages(String topic, String message) {
   rightBack.fill_solid(color);
   leftFront.fill_solid(color);
   rightFront.fill_solid(color);
-  FastLED.show();
 }
