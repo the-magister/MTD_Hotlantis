@@ -17,14 +17,16 @@
 
 // wire it up
 // devices with the light shield have access to D5-D8
-#define IGNITER_PIN D5
-#define FLAME_PIN D6
-#define ON LOW
-#define OFF HIGH
+// If the relay(s) triggers LOW, use D3 and D4 as these are hardware pulled-up
+// If the relay(s) trigger HIGH, use D8 as this is hardware pulled-down
+#define IGNITER_PIN D1
+#define FLAME_PIN D2
+#define ON HIGH
+#define OFF LOW
 // also used
 // D4, GPIO2, BUILTIN_LED
 
-#define LED_PIN D7
+#define LED_PIN D5
 #define COLOR_ORDER RGB
 #define COLOR_CORRECTION TypicalLEDStrip
 #define NUM_LEDS 20
@@ -94,5 +96,3 @@ void processMessages(String topic, String message) {
       FastLED.show();
   }
 }
-
-

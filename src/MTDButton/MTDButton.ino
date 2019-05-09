@@ -14,7 +14,7 @@
 // wire it up
 const boolean onReading = false;
 // devices with the light shield block access to D5-D8
-#define PIN_BUTTON D3 // wire D3/GPIO0 through a N.O. switch to GND
+#define PIN_BUTTON D1 // wire D3/GPIO0 through a N.O. switch to GND
 Bounce button = Bounce();
 String buttonTopic;
 
@@ -54,4 +54,3 @@ void loop() {
 // processes messages that arrive
 void processMessages(String topic, String message) {
 }
-
