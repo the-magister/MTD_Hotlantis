@@ -22,7 +22,7 @@ netInfo *knownNetworks[2] = { &fieldNet, &homeNet };
 MTD_ESPHelper Comms(knownNetworks, 2, 1); // set to 2, 0 in production
 // MTD_ESPHelper Comms(knownNetworks, 2, 0); 
 
-bool MTD_ESPHelper::begin( String name, void (*processMessages)(String topic, String message) ) {
+bool MTD_ESPHelper::begin( String name, void (*processMessages)(String topic, String message), byte heartBeatPin ) {
 	this->myName = name;
 	this->processMessages = processMessages;
 
@@ -43,8 +43,10 @@ bool MTD_ESPHelper::begin( String name, void (*processMessages)(String topic, St
 	ESPHelper::OTA_setHostname(this->OTAname.c_str());
 	
 	// blinky
-	pinMode(BUILTIN_LED, OUTPUT); // D4/GPIO2
-	ESPHelper::enableHeartbeat(BUILTIN_LED);
+	if( heartBeatPin < 16 ) {
+		pinMode(heartBeatPin, OUTPUT); // D4/GPIO2
+		ESPHelper::enableHeartbeat(heartBeatPin);
+	}
 
 	// process Serial commands
 	Serial.setTimeout(100);

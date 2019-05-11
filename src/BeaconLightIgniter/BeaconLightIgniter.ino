@@ -10,47 +10,43 @@
 #include <ESPHelper.h>
 #include <ESPHelperFS.h>
 #include <MTD_Hotlantis.h>
-#include <EL_driver.h>
 
 #define FASTLED_INTERRUPT_RETRY_COUNT 1
 #include <FastLED.h>
 
 // wire it up
 // devices with the light shield have access to D5-D8
-// If the relay(s) triggers LOW, use D3 and D4 as these are hardware pulled-up
-// If the relay(s) trigger HIGH, use D8 as this is hardware pulled-down
-#define IGNITER_PIN D1
-#define FLAME_PIN D2
+// careful with D8: pulled up
+#define IGNITER_PIN D7
 #define ON HIGH
 #define OFF LOW
-// also used
-// D4, GPIO2, BUILTIN_LED
 
-#define LED_PIN D5
+// LED strips
+#define LED_PIN D2
 #define COLOR_ORDER RGB
 #define COLOR_CORRECTION TypicalLEDStrip
 #define NUM_LEDS 20
-
 CRGBArray < NUM_LEDS > leds;
 
+// EL devices
 // pin 3, 5, 6, 9, 10, 11 are hardcoded on the shield
-// those map to:
-//  3 = D15
-//  5 = D13
-//  6 = D12
-//  9 = D9
-// 10 = D10
-// 11 = D11
-EL_class EL[NEL]={
-  EL_class(D15), EL_class(D13), EL_class(D12), EL_class(D9), EL_class(D10), EL_class(D11)
-};
+#define NUM_EL 6
+byte ELPin[NUM_EL] = { D3, D5, D6, D9, D10, D11 };
+// "/B" is D5 is extra LED on the board
+// "/D" is D9 is pulled up and LED on SoC
 
 void setup() {
   // set them off, then enable pin.
   digitalWrite(IGNITER_PIN, OFF);
   pinMode(IGNITER_PIN, OUTPUT);
-  digitalWrite(FLAME_PIN, OFF);
-  pinMode(FLAME_PIN, OUTPUT);
+
+  for (byte i = 0; i < NUM_EL; i++) {
+    analogWrite(ELPin[i], 0);
+    pinMode(ELPin[i], OUTPUT);
+  }
+
+  // wait a tic
+  delay(250);
 
   // for local output
   Serial.begin(115200);
@@ -62,52 +58,77 @@ void setup() {
 
   // bootstrap, if needed.
   if ( true ) {
-    Comms.saveStuff("flameTopic", Comms.actBeaconFlame[0]);
-    Comms.saveStuff("lightTopic", Comms.actBeaconLight[0]);
-    Comms.saveStuff("igniterTopic", Comms.actBeaconIgniter[0]);
+    Comms.saveStuff("myName", "gwf/a/beacon/A");
   }
-  String flameTopic = Comms.loadStuff("flameTopic");
-  String lightTopic = Comms.loadStuff("lightTopic");
-  String igniterTopic = Comms.loadStuff("igniterTopic");
+  String myName = Comms.loadStuff("myName");
 
   // configure comms
-  String myName = lightTopic;
-  myName.replace("/light", "");
-  Comms.begin(myName, processMessages);
-  Comms.sub(flameTopic);
-  Comms.sub(lightTopic);
-  Comms.sub(igniterTopic);
+  Comms.begin(myName, processMessages, 99); // disable heartbeat LED
+  Comms.sub(myName + "/#"); // all my messages
 
   Serial << F("Startup complete.") << endl;
-
- // EL[0].set_light(100);
 }
+
+// tracking traffic
+unsigned long lastTrafficTime = millis();
 
 void loop() {
   // comms handling
   Comms.loop();
+
+  // are we bored yet?
+  if ( (millis() - lastTrafficTime) > (10UL * 1000UL) ) {
+    // show a throbbing rainbow background
+    EVERY_N_MILLISECONDS(20) {
+      static byte hue = 0;
+      hue += 5;
+      leds.fill_rainbow(hue, 255 / leds.size()); // paint
+    }
+    // cycle the EL segments
+    EVERY_N_MILLISECONDS(20) {
+      // https://github.com/FastLED/FastLED/wiki/High-performance-math#scaling
+      for( int i=0; i<NUM_EL; i++ ) {
+        int bpm = map(i, 0, NUM_EL-1, 15, 60); // bpm range
+        int offset = 0 * i;
+        analogWrite(ELPin[i], beatsin16(bpm, 0, PWMRANGE, 0, offset));
+      }
+    }
+  }
+
+  // should handle lights often, too.
+  EVERY_N_MILLISECONDS(20) FastLED.show();
 }
 
 // processes messages that arrive
 void processMessages(String topic, String message) {
+  // have update
+  lastTrafficTime = millis();
 
-  // what action?  on/off?
-  boolean setting = message.equals(Comms.messageBinary[1]) ? ON : OFF;
-
-  if ( topic.indexOf("igniter") != -1 ) {
+  if ( topic.endsWith("igniter") ) {
+    // what action?  on/off?
+    boolean setting = message.equals(Comms.messageBinary[1]) ? ON : OFF;
     digitalWrite(IGNITER_PIN, setting);
-  } else if ( topic.indexOf("fire") != -1 ) {
+  } else if ( topic.endsWith("fire") ) {
+    // what action?  on/off?
+    boolean setting = message.equals(Comms.messageBinary[1]) ? ON : OFF;
     // actually handled on the shore.  but, good to know.
-    
-  } else {
-    // Light
+  } else if ( topic.endsWith("light") ) {
+    // LED lights
     // as a stupid example
-    CRGB color;
-    if ( message.equals("red") ) color = CRGB::Red;
-    if ( message.equals("green") ) color = CRGB::Green;
-    if ( message.equals("blue") ) color = CRGB::Blue;
+    if ( message.equals("red") ) leds.fill_solid(CRGB::Red);
+    else if ( message.equals("green") ) leds.fill_solid(CRGB::Green);
+    else if ( message.equals("blue") ) leds.fill_solid(CRGB::Blue);
+    else leds.fill_solid(CRGB::Black);
+  } else {
+    // EL lights
+    // amount?
+    int proportion = constrain(message.toInt(), 0, PWMRANGE);
 
-    leds.fill_solid(color);
-    FastLED.show();
+    if ( topic.endsWith("A") ) analogWrite(ELPin[0], proportion);
+    else if ( topic.endsWith("B") ) analogWrite(ELPin[1], proportion);
+    else if ( topic.endsWith("C") ) analogWrite(ELPin[2], proportion);
+    else if ( topic.endsWith("D") ) analogWrite(ELPin[3], PWMRANGE-proportion); // because pin is pulled up
+    else if ( topic.endsWith("E") ) analogWrite(ELPin[4], proportion);
+    else if ( topic.endsWith("F") ) analogWrite(ELPin[5], proportion);
   }
 }

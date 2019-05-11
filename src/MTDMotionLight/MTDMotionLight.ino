@@ -99,11 +99,10 @@ void setup() {
   Serial << "Startup: complete." << endl;
 }
 
+// tracking traffic
+unsigned long lastTrafficTime = millis();
 
 void loop() {
-  // track
-  static unsigned long lastTrafficTime = millis();
-  
   // comms handling
   Comms.loop();
 
@@ -143,6 +142,8 @@ void loop() {
 
 // processes messages that arrive
 void processMessages(String topic, String message) {
+  // have update
+  lastTrafficTime = millis();
 
   // as a stupid example
   CRGB color;

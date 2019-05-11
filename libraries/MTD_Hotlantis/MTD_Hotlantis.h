@@ -13,7 +13,7 @@ public:
 	MTD_ESPHelper(netInfo *netList[], uint8_t netCount, uint8_t startIndex = 0); // constructor
 	
 	// startup and store a name for output prefacing.
-	bool begin(String myName, void (*processMessages)(String topic, String message));
+	bool begin(String myName, void (*processMessages)(String topic, String message), byte heartBeatPin=BUILTIN_LED);
 
 	// call this every loop()
 	int loop(boolean publishSerialCommands=true);
@@ -77,7 +77,8 @@ public:
 	// EL wire lighting
 	const String actBeaconLight[3] = { 
 		"gwf/a/beacon/A/light", "gwf/a/beacon/B/light", "gwf/a/beacon/C/light"
-	}; // String?
+	};	// String, if we go with LED lights. 
+		// 0-PWMRANGE, if we go with EL lights.  Also append "/A".."/F" in to the topic
 	
 	// Stand-alone stuff
 	const String senseClock[2] = { 
