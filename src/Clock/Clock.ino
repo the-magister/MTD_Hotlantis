@@ -1,6 +1,6 @@
 // IDE Settings:
 // Tools->Board : "WeMos D1 R2 & mini"
-// Tools->Flash Size : "4M (3M SPIFFS)"
+// Tools->Flash Size : "4M (1M SPIFFS)"
 // Tools->CPU Frequency : "160 MHz"
 // Tools->Upload Speed : "921600"
 
@@ -166,4 +166,3 @@ boolean GetDateStuff(byte& Year, byte& Month, byte& Day, byte& DoW,
 // processes messages that arrive
 void processMessages(String topic, String message) {
 }
-

@@ -214,11 +214,6 @@ newEnd, float inputValue, float curve){
   return rangedValue;
 }
 
-// pin 3, 5, 6, 9, 10, 11 are PWM options
-EL_class EL[NEL]={
-  EL_class(3), EL_class(5), EL_class(6), EL_class(9), EL_class(10), EL_class(11)
-  };
-
 
 
 

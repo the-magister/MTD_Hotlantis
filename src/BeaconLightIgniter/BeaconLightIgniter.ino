@@ -1,6 +1,6 @@
 // IDE Settings:
-// Tools->Board : "WeMos D1 R2 & mini"
-// Tools->Flash Size : "4M (3M SPIFFS)"
+// Tools->Board : "WeMos D1 R1" (!!!!!! NOTE !!!!!!)
+// Tools->Flash Size : "4M (1M SPIFFS)"
 // Tools->CPU Frequency : "160 MHz"
 // Tools->Upload Speed : "921600"
 
@@ -33,13 +33,25 @@
 
 CRGBArray < NUM_LEDS > leds;
 
+// pin 3, 5, 6, 9, 10, 11 are hardcoded on the shield
+// those map to:
+//  3 = D15
+//  5 = D13
+//  6 = D12
+//  9 = D9
+// 10 = D10
+// 11 = D11
+EL_class EL[NEL]={
+  EL_class(D15), EL_class(D13), EL_class(D12), EL_class(D9), EL_class(D10), EL_class(D11)
+};
+
 void setup() {
   // set them off, then enable pin.
-  digitalWrite(IGNITER_PIN, OFF); 
+  digitalWrite(IGNITER_PIN, OFF);
   pinMode(IGNITER_PIN, OUTPUT);
-  digitalWrite(FLAME_PIN, OFF); 
+  digitalWrite(FLAME_PIN, OFF);
   pinMode(FLAME_PIN, OUTPUT);
-  
+
   // for local output
   Serial.begin(115200);
   Serial << endl << endl << endl << "Startup: begin." << endl;
@@ -47,7 +59,7 @@ void setup() {
   Serial << F("Startup: configure leds...");
   FastLED.addLeds<WS2811, LED_PIN, COLOR_ORDER>(leds, leds.size()).setCorrection(COLOR_CORRECTION);
   FastLED.setBrightness(255);
-  
+
   // bootstrap, if needed.
   if ( true ) {
     Comms.saveStuff("flameTopic", Comms.actBeaconFlame[0]);
@@ -60,13 +72,15 @@ void setup() {
 
   // configure comms
   String myName = lightTopic;
-  myName.replace("/light","");
+  myName.replace("/light", "");
   Comms.begin(myName, processMessages);
-  Comms.sub(flameTopic); 
-  Comms.sub(lightTopic); 
-  Comms.sub(igniterTopic); 
+  Comms.sub(flameTopic);
+  Comms.sub(lightTopic);
+  Comms.sub(igniterTopic);
 
   Serial << F("Startup complete.") << endl;
+
+ // EL[0].set_light(100);
 }
 
 void loop() {
@@ -80,19 +94,20 @@ void processMessages(String topic, String message) {
   // what action?  on/off?
   boolean setting = message.equals(Comms.messageBinary[1]) ? ON : OFF;
 
-  if( topic.indexOf("igniter") != -1 ) {  
+  if ( topic.indexOf("igniter") != -1 ) {
     digitalWrite(IGNITER_PIN, setting);
-  } else if( topic.indexOf("fire") != -1 ) {  
-    digitalWrite(FLAME_PIN, setting);
+  } else if ( topic.indexOf("fire") != -1 ) {
+    // actually handled on the shore.  but, good to know.
+    
   } else {
     // Light
-      // as a stupid example
-      CRGB color;
-      if( message.equals("red") ) color = CRGB::Red;
-      if( message.equals("green") ) color = CRGB::Green;
-      if( message.equals("blue") ) color = CRGB::Blue;
-      
-      leds.fill_solid(color);
-      FastLED.show();
+    // as a stupid example
+    CRGB color;
+    if ( message.equals("red") ) color = CRGB::Red;
+    if ( message.equals("green") ) color = CRGB::Green;
+    if ( message.equals("blue") ) color = CRGB::Blue;
+
+    leds.fill_solid(color);
+    FastLED.show();
   }
 }

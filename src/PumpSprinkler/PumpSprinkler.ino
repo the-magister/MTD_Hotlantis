@@ -1,6 +1,6 @@
 // IDE Settings:
 // Tools->Board : "WeMos D1 R2 & mini"
-// Tools->Flash Size : "4M (3M SPIFFS)"
+// Tools->Flash Size : "4M (1M SPIFFS)"
 // Tools->CPU Frequency : "160 MHz"
 // Tools->Upload Speed : "921600"
 
@@ -103,5 +103,3 @@ void boostSprinklerSprinkler(String topic, String message) {
 
   digitalWrite(pin, setting);
 }
-
-

@@ -1,6 +1,6 @@
 // IDE Settings:
-// Tools->Board : "Adafruit Feather HUZZAH ESP8266"
-// Tools->Flash Size : "4M (3M SPIFFS)"
+// Tools->Board : "Adafruit Feather HUZZAH ESP8266" (!!!!!! NOTE !!!!!!)
+// Tools->Flash Size : "4M (1M SPIFFS)"
 // Tools->CPU Frequency : "160 MHz"
 // Tools->Upload Speed : "921600"
 
@@ -82,4 +82,3 @@ void loop() {
 // processes messages that arrive
 void processMessages(String topic, String message) {
 }
-

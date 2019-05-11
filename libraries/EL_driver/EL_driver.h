@@ -11,8 +11,8 @@
 #include <math.h>
 #include <Arduino.h>
 
-#define MINPWM 1    // don't go less than this.  looks like 20.
-#define MAXPWM 255  // don't go more than this.  some lines get flickery after this level.  looks like 200.
+#define MINPWM 20    // don't go less than this.  looks like 20.
+#define MAXPWM 1023  // don't go more than this.  some lines get flickery after this level.  looks like 200.
 #define MINSCALE 0  // sensor scale min. set_min_intensity() overrides.
 #define MAXSCALE 100 // sensor scale max. set_max_intensity() overrides.
 #define RAMPTIME 60000  // default ms to run from MINSCALE to MAXSCALE.  set_ramp_time() overrides.
@@ -69,8 +69,6 @@ private:
 
 };
 
-
-extern EL_class EL[NEL];
 
 #endif
 
