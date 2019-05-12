@@ -21,29 +21,24 @@
 #define ON HIGH
 #define OFF LOW
 
-// LED strips
-#define LED_PIN D2
+// our internal storage, mapped to the hardware.
+// pay no attention to the man behind the curtain.
 #define COLOR_ORDER RGB
 #define COLOR_CORRECTION TypicalLEDStrip
-#define NUM_LEDS 20
-CRGBArray < NUM_LEDS > leds;
+#define NUM_PINS 3
+#define LEDS_PANEL 20
 
-// EL devices
-// pin 3, 5, 6, 9, 10, 11 are hardcoded on the shield
-#define NUM_EL 6
-byte ELPin[NUM_EL] = { D3, D5, D6, D9, D10, D11 };
-// "/B" is D5 is extra LED on the board
-// "/D" is D9 is pulled up and LED on SoC
+CRGBArray < LEDS_PANEL > ledA;
+CRGBArray < LEDS_PANEL > ledB;
+CRGBArray < LEDS_PANEL > ledC;
+
+// track what we're doing with the lights.
+String lightGesture = "rainbow";
 
 void setup() {
   // set them off, then enable pin.
   digitalWrite(IGNITER_PIN, OFF);
   pinMode(IGNITER_PIN, OUTPUT);
-
-  for (byte i = 0; i < NUM_EL; i++) {
-    analogWrite(ELPin[i], 0);
-    pinMode(ELPin[i], OUTPUT);
-  }
 
   // wait a tic
   delay(250);
@@ -52,9 +47,13 @@ void setup() {
   Serial.begin(115200);
   Serial << endl << endl << endl << "Startup: begin." << endl;
 
+  // LEDs
   Serial << F("Startup: configure leds...");
-  FastLED.addLeds<WS2811, LED_PIN, COLOR_ORDER>(leds, leds.size()).setCorrection(COLOR_CORRECTION);
+  FastLED.addLeds<WS2811, D5, COLOR_ORDER>(ledA, ledA.size()).setCorrection(COLOR_CORRECTION);
+  FastLED.addLeds<WS2811, D6, COLOR_ORDER>(ledB, ledB.size()).setCorrection(COLOR_CORRECTION);
+  FastLED.addLeds<WS2811, D7, COLOR_ORDER>(ledC, ledC.size()).setCorrection(COLOR_CORRECTION);
   FastLED.setBrightness(255);
+  Serial << F(" done.") << endl;
 
   // bootstrap, if needed.
   if ( true ) {
@@ -78,26 +77,75 @@ void loop() {
 
   // are we bored yet?
   if ( (millis() - lastTrafficTime) > (10UL * 1000UL) ) {
-    // show a throbbing rainbow background
-    EVERY_N_MILLISECONDS(20) {
-      static byte hue = 0;
-      hue += 5;
-      leds.fill_rainbow(hue, 255 / leds.size()); // paint
-    }
-    // cycle the EL segments
-    EVERY_N_MILLISECONDS(20) {
-      // https://github.com/FastLED/FastLED/wiki/High-performance-math#scaling
-      for( int i=0; i<NUM_EL; i++ ) {
-        int bpm = map(i, 0, NUM_EL-1, 15, 60); // bpm range
-        int offset = 0 * i;
-        analogWrite(ELPin[i], beatsin16(bpm, 0, PWMRANGE, 0, offset));
-      }
-    }
+    lightGesture = "rainbow";
   }
 
-  // should handle lights often, too.
-  EVERY_N_MILLISECONDS(20) FastLED.show();
+  // set a reasonable frame rate so the WiFi has plenty of cycles.
+  EVERY_N_MILLISECONDS(20) {
+    if ( lightGesture == "rainbow" ) {
+      gestureRainbow();
+    } else if ( lightGesture == "rainbowGlitter" ) {
+      gestureRainbow();
+      gestureGlitter(50);
+    } else if ( lightGesture == "confetti" ) gestureConfetti(); 
+    else if ( lightGesture == "sinelon" ) gestureSinelon();
+    else if ( lightGesture == "BPM" ) gestureBPM();
+    else if ( lightGesture == "juggle" ) gestureJuggle();
+    else if ( lightGesture == "red" ) ledA.fill_solid(CRGB::Red);
+    else if ( lightGesture == "green" ) ledA.fill_solid(CRGB::Green);
+    else if ( lightGesture == "blue" ) ledA.fill_solid(CRGB::Blue);
+    else ledA.fill_solid(CRGB::White);
+
+    ledC = ledB = ledA;
+    FastLED.show();
+  }
 }
+
+// lifted from Examples->FastLED->DemoRee100
+void gestureRainbow() {
+  static byte hue = 0;
+  hue += 5;
+  ledA.fill_rainbow(hue, 255 / ledA.size()); // paint
+}
+void gestureGlitter(fract8 chanceOfGlitter) {
+  if ( random8() < chanceOfGlitter) {
+    ledA[ random16(ledA.size()) ] += CRGB::White;
+  }
+}
+void gestureConfetti() {
+  static byte hue = 0;
+  // random colored speckles that blink in and fade smoothly
+  ledA.fadeToBlackBy(10);
+  int pos = random16(ledA.size());
+  ledA[pos] += CHSV( hue++ + random8(64), 200, 255);
+}
+void gestureSinelon() {
+  static byte hue = 0;
+  // a colored dot sweeping back and forth, with fading trails
+  ledA.fadeToBlackBy(20);
+  int pos = beatsin16( 13, 0, ledA.size() - 1 );
+  ledA[pos] += CHSV( hue++, 255, 192);
+}
+void gestureBPM() {
+  static byte hue = 0;
+  // colored stripes pulsing at a defined Beats-Per-Minute (BPM)
+  uint8_t BeatsPerMinute = 62;
+  CRGBPalette16 palette = PartyColors_p;
+  uint8_t beat = beatsin8( BeatsPerMinute, 64, 255);
+  for ( int i = 0; i < ledA.size(); i++) { //9948
+    ledA[i] = ColorFromPalette(palette, hue++ + (i * 2), beat - hue + (i * 10));
+  }
+}
+void gestureJuggle() {
+  // eight colored dots, weaving in and out of sync with each other
+  ledA.fadeToBlackBy(20);
+  byte dothue = 0;
+  for ( int i = 0; i < 8; i++) {
+    ledA[beatsin16( i + 7, 0, ledA.size() - 1 )] |= CHSV(dothue, 200, 255);
+    dothue += 32;
+  }
+}
+
 
 // processes messages that arrive
 void processMessages(String topic, String message) {
@@ -113,22 +161,8 @@ void processMessages(String topic, String message) {
     boolean setting = message.equals(Comms.messageBinary[1]) ? ON : OFF;
     // actually handled on the shore.  but, good to know.
   } else if ( topic.endsWith("light") ) {
-    // LED lights
+    // LED lights; save it
+    lightGesture = message;
     // as a stupid example
-    if ( message.equals("red") ) leds.fill_solid(CRGB::Red);
-    else if ( message.equals("green") ) leds.fill_solid(CRGB::Green);
-    else if ( message.equals("blue") ) leds.fill_solid(CRGB::Blue);
-    else leds.fill_solid(CRGB::Black);
-  } else {
-    // EL lights
-    // amount?
-    int proportion = constrain(message.toInt(), 0, PWMRANGE);
-
-    if ( topic.endsWith("A") ) analogWrite(ELPin[0], proportion);
-    else if ( topic.endsWith("B") ) analogWrite(ELPin[1], proportion);
-    else if ( topic.endsWith("C") ) analogWrite(ELPin[2], proportion);
-    else if ( topic.endsWith("D") ) analogWrite(ELPin[3], PWMRANGE-proportion); // because pin is pulled up
-    else if ( topic.endsWith("E") ) analogWrite(ELPin[4], proportion);
-    else if ( topic.endsWith("F") ) analogWrite(ELPin[5], proportion);
   }
 }
