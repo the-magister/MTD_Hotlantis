@@ -16,8 +16,9 @@
 
 // wire it up
 // devices with the light shield have access to D5-D8
+// careful with D3 and D8: pulled up
 // careful with D8: pulled up
-#define IGNITER_PIN D7
+#define IGNITER_PIN D8
 #define ON HIGH
 #define OFF LOW
 
@@ -25,12 +26,33 @@
 // pay no attention to the man behind the curtain.
 #define COLOR_ORDER RGB
 #define COLOR_CORRECTION TypicalLEDStrip
-#define NUM_PINS 3
-#define LEDS_PANEL 20
+#define NUM_SEGMENTS 3 // D5, D6, D7
+// three vertical columns of lights.
+// facing the panels, left and right are sparse (n=10) and 
+// the middle 
+#define LEDS_LEFT_COL 10
+#define LEDS_CENTER_COL 20
+#define LEDS_RIGHT_COL 10
+// total
+#define LEDS_PANEL LEDS_LEFT_COL + LEDS_CENTER_COL + LEDS_RIGHT_COL
 
+// symmetric panels, A->B->C in clockwise direction
 CRGBArray < LEDS_PANEL > ledA;
 CRGBArray < LEDS_PANEL > ledB;
 CRGBArray < LEDS_PANEL > ledC;
+
+// subsets of each panel
+CRGBSet leftA = ledA(0, LEDS_LEFT_COL - 1);
+CRGBSet leftB = ledB(0, LEDS_LEFT_COL - 1);
+CRGBSet leftC = ledC(0, LEDS_LEFT_COL - 1);
+//
+CRGBSet centerA = ledA(LEDS_LEFT_COL + LEDS_CENTER_COL - 1, LEDS_LEFT_COL); // installed reversed
+CRGBSet centerB = ledB(LEDS_LEFT_COL + LEDS_CENTER_COL - 1, LEDS_LEFT_COL); // installed reversed
+CRGBSet centerC = ledC(LEDS_LEFT_COL + LEDS_CENTER_COL - 1, LEDS_LEFT_COL); // installed reversed
+//
+CRGBSet rightA = ledA(LEDS_LEFT_COL + LEDS_CENTER_COL, LEDS_LEFT_COL + LEDS_CENTER_COL + LEDS_RIGHT_COL - 1);
+CRGBSet rightB = ledB(LEDS_LEFT_COL + LEDS_CENTER_COL, LEDS_LEFT_COL + LEDS_CENTER_COL + LEDS_RIGHT_COL - 1);
+CRGBSet rightC = ledC(LEDS_LEFT_COL + LEDS_CENTER_COL, LEDS_LEFT_COL + LEDS_CENTER_COL + LEDS_RIGHT_COL - 1);
 
 // track what we're doing with the lights.
 String lightGesture = "rainbow";
