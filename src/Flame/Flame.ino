@@ -1,5 +1,5 @@
 // IDE Settings:
-// Tools->Board : "WeMos D1 R2 & mini"
+// Tools->Board : "LOLIN(WEMOS) D1 R2 & mini"
 // Tools->Flash Size : "4M (1M SPIFFS)"
 // Tools->CPU Frequency : "160 MHz"
 // Tools->Upload Speed : "921600"
@@ -26,13 +26,17 @@
 #define PROP_FREQ 300 // Hz; ASCO recommends 300 Hz for Air/Gas
 
 // 4. have button to send igniter signal
-#define IGNITER_PIN D1 // wire to GND
+#define IGNITER_PIN D3 // wire to GND
 #define IGNITER_ON LOW
 #define IGNITER_OFF HIGH
 Bounce igniterButton = Bounce();
 
 // also used
 // D4, GPIO2, BUILTIN_LED
+
+// automagically shutdown
+bool flameOn = false;
+Metro flameAutoShutdown(30UL * 1000UL);
 
 void setup() {
   // set them off, then enable pin.
@@ -72,6 +76,15 @@ void loop() {
     Comms.pub(Comms.actBeaconIgniter[1], Comms.messageBinary[igniterButton.read() == IGNITER_ON]);
     Comms.pub(Comms.actBeaconIgniter[2], Comms.messageBinary[igniterButton.read() == IGNITER_ON]);
   }
+
+  // maybe shutdown?
+  if( flameOn && flameAutoShutdown.check() ) {
+    Serial << "Bad! Shutting down flame automatically." << endl;
+    analogWrite(PROP_A_PIN, 0);
+    analogWrite(PROP_B_PIN, 0);
+    analogWrite(PROP_C_PIN, 0);
+    flameOn = false;
+  }
 }
 
 // processes messages that arrive
@@ -79,6 +92,13 @@ void processMessages(String topic, String message) {
   // amount?
   int proportion = constrain(message.toInt(), 0, PWMRANGE);
 
+  // set an automatic timer to shutdown
+  if( proportion > 0 ) {
+    flameOn = true;
+    flameAutoShutdown.reset();
+  }
+
+  // do it
   if( topic.indexOf("/A/") != -1 ) analogWrite(PROP_A_PIN, proportion);
   if( topic.indexOf("/B/") != -1 ) analogWrite(PROP_B_PIN, proportion);
   if( topic.indexOf("/C/") != -1 ) analogWrite(PROP_C_PIN, proportion);
