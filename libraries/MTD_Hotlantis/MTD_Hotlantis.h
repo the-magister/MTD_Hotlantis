@@ -54,19 +54,21 @@ public:
 	const String senseCannon[2] = { 
 		"gwf/s/cannon/L", "gwf/s/cannon/R" 
 	}; // 0,1
+	// A/pump is a box, with 2 pump controls (A,B) and 4 solenoid controls (A,B,C,D)
+	// B/pump is a duplicate
 	// Pumps 
-	const String actPump[5] = { 
-		"gwf/a/pump/prime/A", "gwf/a/pump/prime/B", 
-		"gwf/a/pump/boost/A", "gwf/a/pump/boost/B", 
-		"gwf/a/pump/cannon"
+	const String actPumpPump[4] = { 
+		"gwf/a/pump/A/pump/A", "gwf/a/pump/A/pump/B", 
+		"gwf/a/pump/B/pump/A", "gwf/a/pump/B/pump/B", 
 	}; // 0,1
-
-	// The three navigation beacons for Hotlantis are A, B, C.
 	// Water sprayers
 	// business end _is_ on the Beacons, but switching is in Pump code
-	const String actBeaconSpray[3] = { 
-		"gwf/a/beacon/A/spray", "gwf/a/beacon/B/spray", "gwf/a/beacon/C/spray"
-	}; // 0-1
+	const String actPumpSpray[8] = { 
+		"gwf/a/pump/A/spray/A", "gwf/a/pump/A/spray/B", "gwf/a/pump/A/spray/C", "gwf/a/pump/A/spray/D",
+		"gwf/a/pump/B/spray/A", "gwf/a/pump/B/spray/B", "gwf/a/pump/B/spray/C", "gwf/a/pump/B/spray/D"
+	}; // 0,1
+	
+	// The three navigation beacons for Hotlantis are A, B, C.
 	// Flame effects
 	const String actBeaconIgniter[3] = { 
 		"gwf/a/beacon/A/igniter", "gwf/a/beacon/B/igniter", "gwf/a/beacon/C/igniter"

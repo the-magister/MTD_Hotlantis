@@ -1,5 +1,5 @@
 // IDE Settings:
-// Tools->Board : "WeMos D1 R2 & mini"
+// Tools->Board : "LOLIN(WEMOS) D1 R2 & mini"
 // Tools->Flash Size : "4M (1M SPIFFS)"
 // Tools->CPU Frequency : "160 MHz"
 // Tools->Upload Speed : "921600"
@@ -12,8 +12,9 @@
 #include <MTD_Hotlantis.h>
 
 // wire it up
-// devices with the light shield have access to D5-D8
-byte pin[4] = {D5, D6, D7, D8};
+// avoid D3 and D4: pulled up.
+byte solenoidPin[4] = {D5, D6, D7, D8};
+byte pumpPin[2] = {D1, D2};
 #define ON HIGH
 #define OFF LOW
 // also used
@@ -22,42 +23,33 @@ byte pin[4] = {D5, D6, D7, D8};
 String myRole;
 
 void setup() {
-  // for random numbers
-  randomSeed(analogRead(0));
 
   // set them off, then enable pin.
   for ( byte i = 0; i < 4; i++ ) {
-    digitalWrite(pin[i], OFF); pinMode(pin[i], OUTPUT);
+    digitalWrite(solenoidPin[i], OFF); pinMode(solenoidPin[i], OUTPUT);
+    if( i<2 ) digitalWrite(pumpPin[i], OFF); pinMode(pumpPin[i], OUTPUT);
   }
+
+  delay(250); // wait a tick
+
+    // for random numbers
+  randomSeed(analogRead(0));
 
   // for local output
   Serial.begin(115200);
   Serial << endl << endl << endl << "Startup: begin." << endl;
 
   // bootstrap new microcontrollers, if needed.
-  if ( true ) {
-    Comms.saveStuff("whichBox", "Prime_Cannon_Sprinkler");
-    Comms.saveStuff("whichBox", "Boost_Sprinkler_Sprinkler");
-  }
+  if ( true ) Comms.saveStuff("whichBox", "gwf/a/pump/A");
+//  if ( true ) Comms.saveStuff("whichBox", "gwf/a/pump/B");
+
   myRole = Comms.loadStuff("whichBox");
   Serial << "Startup: my role [" << myRole << "]." << endl;
 
   // configure comms
-  if ( myRole.equals("Prime_Cannon_Sprinkler") ) {
-    Comms.begin(myRole, primeCannonSprinkler);
-    Comms.sub(Comms.actPump[0]); // prime A
-    Comms.sub(Comms.actPump[1]); // prime B
-    Comms.sub(Comms.actPump[4]); // cannon
-    Comms.sub(Comms.actBeaconSpray[0]); // spray A
-  }
-  else {
-    Comms.begin(myRole, boostSprinklerSprinkler);
-    Comms.sub(Comms.actPump[2]); // boost A
-    Comms.sub(Comms.actPump[3]); // boost B
-    Comms.sub(Comms.actBeaconSpray[1]); // spray B
-    Comms.sub(Comms.actBeaconSpray[2]); // spray C
-  }
-
+  Comms.begin(myRole, processMessages);
+  Comms.sub(myRole + "/#"); // all my messages
+ 
   Serial << F("Startup complete.") << endl;
 }
 
@@ -67,39 +59,29 @@ void loop() {
 }
 
 // processes messages that arrive
-void primeCannonSprinkler(String topic, String message) {
-
+void processMessages(String topic, String message) {
   // pump manipulation.  KISS.
 
+  byte pin;
+  if( topic.indexOf("spray") != -1 ) {
+    if ( topic.endsWith("A") ) pin = solenoidPin[0]; 
+    else if ( topic.endsWith("B") ) pin = solenoidPin[1];
+    else if ( topic.endsWith("C") ) pin = solenoidPin[2];
+    else if ( topic.endsWith("D") ) pin = solenoidPin[3];
+    else return;
+    
+  } else if ( topic.indexOf("pump") != -1 ) {
+    if ( topic.endsWith("A") ) pin = pumpPin[0]; 
+    else if ( topic.endsWith("B") ) pin = pumpPin[1];
+    else return;    
+  }
+
   // what action?  on/off?
-  boolean setting = message.equals(Comms.messageBinary[1]); // is on?
-  if( setting ) setting = ON;
-  else setting = OFF;
+  boolean setting = message.equals(Comms.messageBinary[1]) ? ON : OFF; // is on?
+  // note the specific requirement to be ON.  
+    
+  // Do it.
+  digitalWrite(pin, setting);
+  Serial << "Setting pin " << pin << "=" << setting << endl;
   
-  byte pin;
-  if ( topic.equals(Comms.actPump[0]) ) pin = D5; // prime A
-  else if ( topic.equals(Comms.actPump[1]) ) pin = D6; // prime B
-  else if ( topic.equals(Comms.actPump[4]) ) pin = D7; // cannon
-  else if ( topic.equals(Comms.actBeaconSpray[0]) ) pin = D8; // spray A
-  else return;
-
-  digitalWrite(pin, setting);
-}
-
-// processes messages that arrive
-void boostSprinklerSprinkler(String topic, String message) {
-
-  // pump manipulation.  KISS.
-
-  // what action?  on/off?
-  boolean setting = message.equals(Comms.messageBinary[1]); // is on?
-
-  byte pin;
-  if ( topic.equals(Comms.actPump[2]) ) pin = D5; // boost A
-  else if ( topic.equals(Comms.actPump[3]) ) pin = D6; // boost B
-  else if ( topic.equals(Comms.actBeaconSpray[1]) ) pin = D7; // spray B
-  else if ( topic.equals(Comms.actBeaconSpray[2]) ) pin = D8; // spray C
-  else return;
-
-  digitalWrite(pin, setting);
 }
