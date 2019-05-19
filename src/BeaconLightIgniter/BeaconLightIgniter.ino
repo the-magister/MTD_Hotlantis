@@ -30,9 +30,9 @@
 // three vertical columns of lights.
 // facing the panels, left and right are sparse (n=10) and 
 // the middle 
-#define LEDS_LEFT_COL 10
-#define LEDS_CENTER_COL 20
-#define LEDS_RIGHT_COL 10
+#define LEDS_LEFT_COL 8
+#define LEDS_CENTER_COL 15
+#define LEDS_RIGHT_COL 8
 // total
 #define LEDS_PANEL LEDS_LEFT_COL + LEDS_CENTER_COL + LEDS_RIGHT_COL
 
@@ -46,16 +46,19 @@ CRGBSet leftA = ledA(0, LEDS_LEFT_COL - 1);
 CRGBSet leftB = ledB(0, LEDS_LEFT_COL - 1);
 CRGBSet leftC = ledC(0, LEDS_LEFT_COL - 1);
 //
-CRGBSet centerA = ledA(LEDS_LEFT_COL + LEDS_CENTER_COL - 1, LEDS_LEFT_COL); // installed reversed
-CRGBSet centerB = ledB(LEDS_LEFT_COL + LEDS_CENTER_COL - 1, LEDS_LEFT_COL); // installed reversed
-CRGBSet centerC = ledC(LEDS_LEFT_COL + LEDS_CENTER_COL - 1, LEDS_LEFT_COL); // installed reversed
+CRGBSet centerAr = ledA(LEDS_LEFT_COL, LEDS_LEFT_COL + LEDS_CENTER_COL - 1); // installed reversed
+CRGBSet centerBr = ledB(LEDS_LEFT_COL, LEDS_LEFT_COL + LEDS_CENTER_COL - 1); // installed reversed
+CRGBSet centerCr = ledC(LEDS_LEFT_COL, LEDS_LEFT_COL + LEDS_CENTER_COL - 1); // installed reversed
+CRGBSet centerA = centerAr(centerAr.size()-1, 0);
+CRGBSet centerB = centerAr(centerBr.size()-1, 0);
+CRGBSet centerC = centerAr(centerCr.size()-1, 0);
 //
 CRGBSet rightA = ledA(LEDS_LEFT_COL + LEDS_CENTER_COL, LEDS_LEFT_COL + LEDS_CENTER_COL + LEDS_RIGHT_COL - 1);
 CRGBSet rightB = ledB(LEDS_LEFT_COL + LEDS_CENTER_COL, LEDS_LEFT_COL + LEDS_CENTER_COL + LEDS_RIGHT_COL - 1);
 CRGBSet rightC = ledC(LEDS_LEFT_COL + LEDS_CENTER_COL, LEDS_LEFT_COL + LEDS_CENTER_COL + LEDS_RIGHT_COL - 1);
 
 // track what we're doing with the lights.
-String lightGesture = "rainbow";
+String lightGesture = "BPM";
 
 void setup() {
   // set them off, then enable pin.
@@ -99,7 +102,7 @@ void loop() {
 
   // are we bored yet?
   if ( (millis() - lastTrafficTime) > (10UL * 1000UL) ) {
-    lightGesture = "rainbow";
+    lightGesture = "BPM";
   }
 
   // set a reasonable frame rate so the WiFi has plenty of cycles.
@@ -127,7 +130,12 @@ void loop() {
 void gestureRainbow() {
   static byte hue = 0;
   hue += 5;
-  ledA.fill_rainbow(hue, 255 / ledA.size()); // paint
+  // per-module step size through color wheel proportional to the 
+  leftA.fill_rainbow(hue, LEDS_CENTER_COL); 
+  rightA = leftA;  
+  centerA.fill_rainbow(hue, LEDS_LEFT_COL); 
+
+//  ledA.fill_rainbow(hue, 255 / ledA.size()); // paint
 }
 void gestureGlitter(fract8 chanceOfGlitter) {
   if ( random8() < chanceOfGlitter) {
@@ -150,20 +158,22 @@ void gestureSinelon() {
 }
 void gestureBPM() {
   static byte hue = 0;
+  hue++;
   // colored stripes pulsing at a defined Beats-Per-Minute (BPM)
-  uint8_t BeatsPerMinute = 62;
-  CRGBPalette16 palette = PartyColors_p;
+  uint8_t BeatsPerMinute = 12;
+  static CRGBPalette16 palette = PartyColors_p;
   uint8_t beat = beatsin8( BeatsPerMinute, 64, 255);
   for ( int i = 0; i < ledA.size(); i++) { //9948
-    ledA[i] = ColorFromPalette(palette, hue++ + (i * 2), beat - hue + (i * 10));
+    ledA[i] = ColorFromPalette(palette, hue + (i * 2), beat - hue + (i * 10));
   }
 }
 void gestureJuggle() {
   // eight colored dots, weaving in and out of sync with each other
   ledA.fadeToBlackBy(20);
   byte dothue = 0;
-  for ( int i = 0; i < 8; i++) {
-    ledA[beatsin16( i + 7, 0, ledA.size() - 1 )] |= CHSV(dothue, 200, 255);
+  byte n = 3;
+  for ( int i = 0; i < n; i++) {
+    ledA[beatsin16( i + (n-1), 0, ledA.size() - 1 )] |= CHSV(dothue, 200, 255);
     dothue += 32;
   }
 }
