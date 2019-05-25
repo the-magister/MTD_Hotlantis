@@ -23,10 +23,17 @@
 #define PROP_A_PIN D5
 #define PROP_B_PIN D6
 #define PROP_C_PIN D7
-#define PROP_FREQ 300 // Hz; ASCO recommends 300 Hz for Air/Gas
+// 50 works
+//#define PROP_FREQ 50 // Hz; ASCO recommends 300 Hz for Air/Gas
+// 10 lets you go low, but "chugs"
+//#define PROP_FREQ 10 // Hz; ASCO recommends 300 Hz for Air/Gas
+// 100 is nice,  floor is ~500.
+//#define PROP_FREQ 100 // Hz; ASCO recommends 300 Hz for Air/Gas
+// 60 gets down to ~350 floor.
+#define PROP_FREQ 60 // Hz; ASCO recommends 300 Hz for Air/Gas
 
 // 4. have button to send igniter signal
-#define IGNITER_PIN D3 // wire to GND
+#define IGNITER_PIN D1 // wire to GND
 #define IGNITER_ON LOW
 #define IGNITER_OFF HIGH
 Bounce igniterButton = Bounce();
@@ -44,23 +51,23 @@ void setup() {
   analogWrite(PROP_B_PIN, 0); pinMode(PROP_B_PIN, OUTPUT);
   analogWrite(PROP_C_PIN, 0); pinMode(PROP_C_PIN, OUTPUT);
   analogWriteFreq(PROP_FREQ);
-  
+
   // wait a tic
   delay(250);
-  
+
   // enable pin.
   igniterButton.attach(IGNITER_PIN, INPUT_PULLUP);
   igniterButton.interval(5); // interval in ms
-  
+
   // for local output
   Serial.begin(115200);
   Serial << endl << endl << endl << "Startup: begin." << endl;
- 
+
   // configure comms
   Comms.begin("Flame", processMessages);
-  Comms.sub(Comms.actBeaconFlame[0]); 
-  Comms.sub(Comms.actBeaconFlame[1]); 
-  Comms.sub(Comms.actBeaconFlame[2]); 
+  Comms.sub(Comms.actBeaconFlame[0]);
+  Comms.sub(Comms.actBeaconFlame[1]);
+  Comms.sub(Comms.actBeaconFlame[2]);
 
   Serial << F("Startup complete.") << endl;
 }
@@ -78,7 +85,8 @@ void loop() {
   }
 
   // maybe shutdown?
-  if( flameOn && flameAutoShutdown.check() ) {
+  static boolean doAutoShutdown = false;
+  if ( doAutoShutdown && flameOn && flameAutoShutdown.check() ) {
     Serial << "Bad! Shutting down flame automatically." << endl;
     analogWrite(PROP_A_PIN, 0);
     analogWrite(PROP_B_PIN, 0);
@@ -93,13 +101,13 @@ void processMessages(String topic, String message) {
   int proportion = constrain(message.toInt(), 0, PWMRANGE);
 
   // set an automatic timer to shutdown
-  if( proportion > 0 ) {
+  if ( proportion > 0 ) {
     flameOn = true;
     flameAutoShutdown.reset();
   }
 
   // do it
-  if( topic.indexOf("/A/") != -1 ) analogWrite(PROP_A_PIN, proportion);
-  if( topic.indexOf("/B/") != -1 ) analogWrite(PROP_B_PIN, proportion);
-  if( topic.indexOf("/C/") != -1 ) analogWrite(PROP_C_PIN, proportion);
+  if ( topic.indexOf("/A/") != -1 ) analogWrite(PROP_A_PIN, proportion);
+  if ( topic.indexOf("/B/") != -1 ) analogWrite(PROP_B_PIN, proportion);
+  if ( topic.indexOf("/C/") != -1 ) analogWrite(PROP_C_PIN, proportion);
 }
