@@ -28,9 +28,8 @@ void setup() {
   button.interval(5); // interval in ms
 
   // bootstrap new microcontrollers, if needed.
-  if ( true ) {
-    Comms.saveStuff("publishTopic", Comms.senseMTDButton[0]);
-  }
+//  Comms.saveStuff("publishTopic", Comms.senseMTDButton[2]);
+
   buttonTopic = Comms.loadStuff("publishTopic");
   Serial << "Startup: publishing to topic [" << buttonTopic << "]." << endl;
 

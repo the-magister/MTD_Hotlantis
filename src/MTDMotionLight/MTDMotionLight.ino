@@ -81,9 +81,9 @@ void setup() {
   motion.interval(5); // interval in ms
 
   // bootstrap, if needed.
-  if ( true ) {
-    Comms.saveStuff("motionTopic", Comms.senseMTDMotion[0]);
-    Comms.saveStuff("lightTopic", Comms.actMTDLight[0]);
+  if ( false ) {
+    Comms.saveStuff("motionTopic", Comms.senseMTDMotion[2]);
+    Comms.saveStuff("lightTopic", Comms.actMTDLight[2]);
   }
   motionTopic = Comms.loadStuff("motionTopic");
   Serial << "Startup: publishing to topic [" << motionTopic << "]." << endl;

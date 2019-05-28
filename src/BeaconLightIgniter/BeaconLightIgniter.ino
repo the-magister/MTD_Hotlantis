@@ -81,9 +81,7 @@ void setup() {
   Serial << F(" done.") << endl;
 
   // bootstrap, if needed.
-  if ( true ) {
-    Comms.saveStuff("myName", "gwf/a/beacon/A");
-  }
+//  Comms.saveStuff("myName", "gwf/a/beacon/C");
   String myName = Comms.loadStuff("myName");
 
   // configure comms
