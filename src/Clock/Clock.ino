@@ -42,30 +42,11 @@ void setup() {
 }
 
 void loop() {
-  // comms handling
-  Comms.loop(false);
-
-  static Metro publishInterval(5000UL);
-  if ( publishInterval.check() ) {
-    String hour = String( Clock.getHour(h12, PM) );
-    String dayofweek = String( Clock.getDoW() );
-
-    // publish new reading.
-    Comms.pub(Comms.senseClock[0], hour);
-    Comms.pub(Comms.senseClock[1], dayofweek);
-
-    Serial << "Clock. ";
-    showTime();
-
-    // once we start up, we can stop frantically trying to publish the time.
-    if( Comms.getStatus() == FULL_CONNECTION) publishInterval.interval(60UL * 1000UL);
-  }
-
   // If something is coming in on the serial line, it's
   // a time correction so set the clock accordingly.
   if (Serial.available()) {
     delay(100);
-    if( ! GetDateStuff(Year, Month, Date, DoW, Hour, Minute, Second) ) return;
+    if ( ! GetDateStuff(Year, Month, Date, DoW, Hour, Minute, Second) ) return;
 
     Clock.setClockMode(false);	// set to 24h
     //setClockMode(true);	// set to 12h
@@ -81,6 +62,35 @@ void loop() {
     Serial << "clock set: " << endl;
     showTime();
   }
+
+  // comms handling
+  Comms.loop(false);
+
+  // wait for full uplink
+  if ( Comms.getStatus() != FULL_CONNECTION ) return;
+
+  // track publish time
+  static Metro publishInterval(10UL * 1000UL);
+  if ( publishInterval.check() ) {
+    // maybe publish new reading(s).
+    
+    static String lastHour = "";
+    String hour = String( Clock.getHour(h12, PM) );
+    if ( hour != lastHour ) {
+      Comms.pub(Comms.senseClock[0], hour);
+      lastHour = hour;
+    }
+
+    static String lastDayofweek = "";
+    String dayofweek = String( Clock.getDoW() );
+    if ( dayofweek != lastDayofweek ) {
+      Comms.pub(Comms.senseClock[1], dayofweek);
+      lastDayofweek = dayofweek;
+    }
+
+    Serial << "Clock. ";
+    showTime();
+  }
 }
 
 void showTime() {
@@ -90,7 +100,7 @@ void showTime() {
   Serial.print("-");
   Serial.print(Clock.getDate(), DEC);
   Serial.print(" ");
-  Serial.print(Clock.getDoW(), DEC); 
+  Serial.print(Clock.getDoW(), DEC);
   Serial.print(" ");
   Serial.print(Clock.getHour(h12, PM), DEC); //24-hr
   Serial.print(":");
@@ -101,7 +111,7 @@ void showTime() {
 }
 
 boolean GetDateStuff(byte& Year, byte& Month, byte& Day, byte& DoW,
-                  byte& Hour, byte& Minute, byte& Second) {
+                     byte& Hour, byte& Minute, byte& Second) {
   // Call this if you notice something coming in on
   // the serial port. The stuff coming in should be in
   // the order YYMMDDwHHMMSS, with an 'x' at the end.
@@ -112,7 +122,7 @@ boolean GetDateStuff(byte& Year, byte& Month, byte& Day, byte& DoW,
 
   Metro timeout(1000UL);
   timeout.reset();
-  
+
   byte j = 0;
   while (!GotString) {
     if (Serial.available()) {
@@ -123,15 +133,15 @@ boolean GetDateStuff(byte& Year, byte& Month, byte& Day, byte& DoW,
         GotString = true;
       }
     }
-    if( timeout.check() ) {
+    if ( timeout.check() ) {
       Serial << "Enter: YYMMDDwHHMMSSx" << endl;
-      return(false); // bail out
+      return (false); // bail out
     }
   }
   InString[j] = '\0';
 
   Serial << "Received: " << endl;
-  
+
   Serial.println(InString);
   // Read Year first
   Temp1 = (byte)InString[0] - 48;
@@ -160,7 +170,7 @@ boolean GetDateStuff(byte& Year, byte& Month, byte& Day, byte& DoW,
   Temp2 = (byte)InString[12] - 48;
   Second = Temp1 * 10 + Temp2;
 
-  return(true);
+  return (true);
 }
 
 // processes messages that arrive
