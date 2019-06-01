@@ -69,9 +69,9 @@ void setup() {
 
   // LEDs
   Serial << F("Startup: configure leds...");
-  FastLED.addLeds<WS2811, D5, COLOR_ORDER>(leftBack, leftBack.size()).setCorrection(COLOR_CORRECTION);
-  FastLED.addLeds<WS2811, D6, COLOR_ORDER>(rightBack, rightBack.size()).setCorrection(COLOR_CORRECTION);
-  FastLED.addLeds<WS2811, D7, COLOR_ORDER>(leftFront, leftFront.size()).setCorrection(COLOR_CORRECTION);
+  FastLED.addLeds<WS2811, D5, COLOR_ORDER>(leftFront, leftFront.size()).setCorrection(COLOR_CORRECTION);
+  FastLED.addLeds<WS2811, D6, COLOR_ORDER>(leftBack, leftBack.size()).setCorrection(COLOR_CORRECTION);
+  FastLED.addLeds<WS2811, D7, COLOR_ORDER>(rightBack, rightBack.size()).setCorrection(COLOR_CORRECTION);
   FastLED.addLeds<WS2811, D8, COLOR_ORDER>(rightFront, rightFront.size()).setCorrection(COLOR_CORRECTION);
   FastLED.setBrightness(255);
   Serial << F(" done.") << endl;
@@ -131,8 +131,8 @@ void loop() {
       
       leftBack.fill_rainbow(hue, 255 / leftBack.size()); // paint
       leftFront.fill_rainbow(hue + 128, -255 / leftFront.size());
-      rightBack = leftBack;
-      rightFront = leftFront;
+      rightBack = leftBack; // Alan: these are "deep copies"
+      rightFront = leftFront; // Eric: these are "Deep State"
     }
   }
 
