@@ -58,7 +58,7 @@ CRGBSet rightB = ledB(LEDS_LEFT_COL + LEDS_CENTER_COL, LEDS_LEFT_COL + LEDS_CENT
 CRGBSet rightC = ledC(LEDS_LEFT_COL + LEDS_CENTER_COL, LEDS_LEFT_COL + LEDS_CENTER_COL + LEDS_RIGHT_COL - 1);
 
 // track what we're doing with the lights.
-String lightGesture = "BPM";
+String lightGesture = "maxWhite";
 
 void setup() {
   // set them off, then enable pin.
@@ -99,7 +99,7 @@ void loop() {
   Comms.loop();
 
   // are we bored yet?
-  if ( (millis() - lastTrafficTime) > (10UL * 1000UL) ) {
+  if ( (millis() - lastTrafficTime) > (20UL * 1000UL) ) {
     lightGesture = "BPM";
   }
 
@@ -117,6 +117,7 @@ void loop() {
     else if ( lightGesture == "red" ) ledA.fill_solid(CRGB::Red);
     else if ( lightGesture == "green" ) ledA.fill_solid(CRGB::Green);
     else if ( lightGesture == "blue" ) ledA.fill_solid(CRGB::Blue);
+    else if ( lightGesture == "maxWhite" ) ledA.fill_solid(CRGB::White);
     else ledA.fill_solid(CRGB::White);
 
     ledC = ledB = ledA;
