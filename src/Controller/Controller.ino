@@ -31,7 +31,7 @@ struct SensorData_t {
   boolean buttonMTD[3]; // A,B,C
 
   // cannon inputs
-  boolean buttonCannon[2]; // L,R
+  boolean buttonCannon[2] = {false,false}; // L,R
 };
 SensorData_t sensorData;
 
@@ -59,7 +59,8 @@ struct ActuatorState_t {
 
   // sound outputs
   // likewise, very complicated.
-  String sound;
+  String soundAction;
+  String soundTrack;
   
 };
 ActuatorState_t actState;
@@ -112,6 +113,24 @@ void loop() {
   if ( someTimer.check() ) {
     printSensorData();
   }
+
+  static bool playedIntro = false;
+  static Metro soundTimer(15UL * 1000UL);
+  if ( soundTimer.check() && !playedIntro) {
+      char msg[2];
+      itoa(300,msg,10);
+      actState.soundAction = "PlaySolo";
+      actState.soundTrack = msg;
+
+      Serial << "***Playing intro sound" << endl;
+      playedIntro = true;
+
+      String smsg = String();
+      smsg.concat(Comms.actSound[0]);
+      smsg.concat(actState.soundAction);
+      Serial << "Sending sound: " << smsg << endl;
+      Comms.pub(smsg, actState.soundTrack);
+  }
 }
 
 void setColorPalette(byte timeDayOfWeek) {
@@ -133,6 +152,8 @@ void mapSensorsToActions() {
   // Maybe rotate colorpalette based on day of week?
   static byte timeDayOfWeek, timeHour;
   if ( sensorData.timeDayOfWeek != timeDayOfWeek ) {
+    Serial << "Change of day" << endl;
+    
     timeDayOfWeek = sensorData.timeDayOfWeek;
     setColorPalette(timeDayOfWeek);
     return; // bail out, so the message is sent.  Important, as we might clobber the light message downcode.
@@ -168,9 +189,9 @@ void mapSensorsToActions() {
     actState.beaconSpray[2] = sensorData.motionMTD[2] || sensorData.buttonMTD[2];
 
     // Sound
-    if ( sensorData.buttonCannon[0] || sensorData.buttonCannon[1] ) actState.sound = "cannonOn";
-    else actState.sound = "cannonOff";
-    
+//    if ( sensorData.buttonCannon[0] || sensorData.buttonCannon[1] ) actState.sound = "cannonOn";
+//    else actState.sound = "cannonOff";
+
   } else {
     // Nighttime
 
@@ -185,6 +206,20 @@ void mapSensorsToActions() {
     // Sound
   }
 
+  // Any time effects
+  if ( sensorData.buttonCannon[0] || sensorData.buttonCannon[1] ) {
+      Serial << "Playing Cannon Sound" << endl;
+      char msg[2];
+      itoa(951,msg,10);
+      actState.soundAction = "PlaySoloLoop";
+      actState.soundTrack = msg;
+  } else if (!sensorData.buttonCannon[0] && !sensorData.buttonCannon[1]) {
+      char msg[2];
+      itoa(951,msg,10);
+      actState.soundAction = "Stop";
+      actState.soundTrack = msg;
+  }
+  
   // note we've done with updates
   sensorData.haveChanged = false;
 }
@@ -197,19 +232,27 @@ void publishActions() {
   if ( lastState.fogMTD != actState.fogMTD ) publishBinary(Comms.actMTDFog[0], actState.fogMTD);
 
   // sound outputs
-  if ( lastState.sound != actState.sound ) Comms.pub(Comms.actSound[0], actState.sound);
+  if ( lastState.soundAction != actState.soundAction || lastState.soundTrack != actState.soundTrack ) {
+    String msg = String();
+    msg.concat(Comms.actSound[0]);
+    msg.concat(actState.soundAction);
+    Serial << "Sending sound: " << msg << endl;
+    Comms.pub(msg, actState.soundTrack);
+  }
 
   // water outputs
-  if ( lastState.primePump[0] != actState.primePump[0] ) publishBinary(Comms.actPump[0], actState.primePump[0]);
-  if ( lastState.primePump[1] != actState.primePump[1] ) publishBinary(Comms.actPump[1], actState.primePump[1]);
-  if ( lastState.boostPump[0] != actState.boostPump[0] ) publishBinary(Comms.actPump[2], actState.boostPump[0]);
-  if ( lastState.boostPump[1] != actState.boostPump[1] ) publishBinary(Comms.actPump[3], actState.boostPump[1]);
-  if ( lastState.cannonSpray != actState.cannonSpray )   publishBinary(Comms.actPump[4], actState.cannonSpray);
+  //if ( lastState.primePump[0] != actState.primePump[0] ) publishBinary(Comms.actPump[0], actState.primePump[0]);
+  //if ( lastState.primePump[1] != actState.primePump[1] ) publishBinary(Comms.actPump[1], actState.primePump[1]);
+  //if ( lastState.boostPump[0] != actState.boostPump[0] ) publishBinary(Comms.actPump[2], actState.boostPump[0]);
+  //if ( lastState.boostPump[1] != actState.boostPump[1] ) publishBinary(Comms.actPump[3], actState.boostPump[1]);
+  //if ( lastState.cannonSpray != actState.cannonSpray )   publishBinary(Comms.actPump[4], actState.cannonSpray);
 
   for ( byte i = 0; i < 3; i++ ) {
     // nav beacon sprayers
+    /*
     if ( lastState.beaconSpray[i] != actState.beaconSpray[i] )
       publishBinary(Comms.actBeaconSpray[i], actState.beaconSpray[i]);
+*/
 
     // nav beacon igniters
     if ( lastState.beaconIgniter[i] != actState.beaconIgniter[i] )
@@ -268,7 +311,19 @@ void processSensors(String topic, String message) {
   } else if ( topic.indexOf("motion") != -1 && index != 99  ) {
     sensorData.motionMTD[index] = (boolean)message.toInt();
   } else if ( topic.indexOf("cannon") != -1 && index != 99  ) {
-    sensorData.buttonCannon[index] = (boolean)message.toInt();
+//    sensorData.buttonCannon[index] = (boolean)message.toInt();
+    Serial << "Handle cannon message.  " << message << endl;
+
+    // Handle as strings first and binary second
+    if (message[0] == '0') {
+      Serial << "Cannon released" << endl;
+      sensorData.buttonCannon[index] = false;
+    } else if (message[0] == '1') {
+      Serial << "Cannon fired.  index: " << index << endl;
+      sensorData.buttonCannon[index] = true;      
+    } else {
+      Serial << "Got a weird cannon value: " << message[0] << endl;
+    }
   } else {
     Serial << "I'm not sure why, but here we are. index=" << index << endl;
   }

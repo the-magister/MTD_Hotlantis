@@ -72,6 +72,8 @@ void processMessages(String topic, String message) {
   // "Quiet"
   //
   // message.toInt() is assumed to be a valid track number
+
+  Serial << "Got message: " << topic;
   
   if( topic.indexOf("Play") != -1 ) {
     // play a track
@@ -96,5 +98,8 @@ void processMessages(String topic, String message) {
     }
   } else if( topic.indexOf("Quiet") != -1 ) {
      tsunami.stopAllTracks(); 
-  } 
+  } else if (topic.indexOf("Stop") != -1) {
+    int trackNum = message.toInt();
+    tsunami.trackStop(trackNum);
+  }
 }

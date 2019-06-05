@@ -118,11 +118,18 @@ void loop() {
     else if ( lightGesture == "green" ) ledA.fill_solid(CRGB::Green);
     else if ( lightGesture == "blue" ) ledA.fill_solid(CRGB::Blue);
     else if ( lightGesture == "maxWhite" ) ledA.fill_solid(CRGB::White);
+    else if ( lightGesture == "centerWhite") gestureCenterWhite();
     else ledA.fill_solid(CRGB::White);
 
-    ledC = ledB = ledA;
+    //ledC = ledB = ledA;  // Copy animation to each face
     FastLED.show();
   }
+}
+
+void gestureCenterWhite() {
+   ledA.fill_solid(CRGB::Black); centerA.fill_solid(CRGB::Green);
+   //ledB.fill_solid(CRGB::Black); centerB.fill_solid(CRGB::White);
+   //ledC.fill_solid(CRGB::Black); centerC.fill_solid(CRGB::White);
 }
 
 // lifted from Examples->FastLED->DemoRee100

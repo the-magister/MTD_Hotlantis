@@ -87,7 +87,7 @@ public:
 		"gwf/s/clock/hour", "gwf/s/clock/dayofweek" 
 	}; // both messages are bytes
 	const String actSound[1] = { 
-		"gwf/a/sound/track"
+		"gwf/a/sound/"
 	}; // both messages are bytes
 	
 	
