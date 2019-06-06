@@ -88,6 +88,16 @@ public:
 	}; // both messages are bytes
 	const String actSound[1] = { 
 		"gwf/a/sound/"
+		// MGD: I think this is a bad idea, and the messages should be enumerated here
+		// in this header file.  If you do that, Sound.ino can look at this file
+		// and implement all of these messages, and Controller.ino can look at this 
+		// file and understand what the "menu" of gestures are.
+		// If you bypass this header, then one must look at both source files at
+		// the same time.  And a _typo_ can completely eff everything up.  
+		// Basically: message _contents_ can be highly variable, but I'd recommend
+		// making the _topics_ deterministic.  
+		// I mean:
+		// "gwf/a/sound/Play", "gwf/a/sound/PlaySolo", etc.
 	}; // both messages are bytes
 	
 	

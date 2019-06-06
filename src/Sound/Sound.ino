@@ -64,6 +64,7 @@ void loop() {
 // processes messages that arrive
 void processMessages(String topic, String message) {
   
+  // MGD: I'd recommend that these topic definitions get folder into MTD_Hotlantis.h
   // As an example, let's assume the following topics:
   // "Play"
   // "PlaySolo"

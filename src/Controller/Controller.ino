@@ -49,6 +49,7 @@ struct ActuatorState_t {
   // fire outputs
   boolean beaconIgniter[3]; // on,off
   byte beaconFlame[3]; // 0=off, 255=maximal
+  // MGD: incorrect.  Max is PWMRANGE.  See Flame.ino.  You can also set the bit depth.
 
   // light outputs
   // these are far, far more complicated than "on" or "off".
@@ -121,6 +122,8 @@ void loop() {
       itoa(300,msg,10);
       actState.soundAction = "PlaySolo";
       actState.soundTrack = msg;
+	  // MGD: I think this is easier:
+	  // actState.soundTrack = String(300); // base 10 is the default
 
       Serial << "***Playing intro sound" << endl;
       playedIntro = true;
@@ -128,6 +131,20 @@ void loop() {
       String smsg = String();
       smsg.concat(Comms.actSound[0]);
       smsg.concat(actState.soundAction);
+	  // MGD: I think the "+" operator is ok, too:
+	  // String smsg = Comms.actSound[0] + actState.soundAction;
+	  
+	  
+	  // Still, I think you want to enumerate actSound:
+	  //
+	  // enum SoundAction = { PlaySolo, Play, Quiet, ...};
+	  // put that in MTD_Hotlantis.h? 
+	  //
+	  // In actState, define soundAct as that enumerated type.
+	  // 
+	  // then:
+	  // Comms.pub(Comms.actSound[actState.soundAct], actState.soundTrack);
+	  
       Serial << "Sending sound: " << smsg << endl;
       Comms.pub(smsg, actState.soundTrack);
   }
