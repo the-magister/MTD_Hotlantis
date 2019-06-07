@@ -18,7 +18,7 @@
 // devices with the light shield have access to D5-D8
 // careful with D3 and D8: pulled up
 // careful with D8: pulled up
-#define IGNITER_PIN D8
+#define IGNITER_PIN D1
 #define ON HIGH
 #define OFF LOW
 
@@ -85,7 +85,7 @@ void setup() {
   String myName = Comms.loadStuff("myName");
 
   // configure comms
-  Comms.begin(myName, processMessages, 99); // disable heartbeat LED
+  Comms.begin(myName, processMessages); 
   Comms.sub(myName + "/#"); // all my messages
 
   Serial << F("Startup complete.") << endl;
