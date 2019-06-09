@@ -104,6 +104,7 @@ struct ActuatorState_t {
   // fire outputs
   boolean beaconIgniter[3]; // on,off
   byte beaconFlame[3]; // 0=off, 255=maximal
+  // MGD: incorrect.  Max is PWMRANGE.  See Flame.ino.  You can also set the bit depth.
 
   // light outputs
   // these are far, far more complicated than "on" or "off".
@@ -175,17 +176,11 @@ void loop() {
   if ( soundTimer.check() && !playedIntro) {
       if (Comms.getStatus() != FULL_CONNECTION) return;
       
-
       Serial << "WIFI Connected" << endl;
       
       playTrack("PlaySolo", 100);
       playedIntro = true;
-      /*
-      String smsg = String();
-      smsg.concat(Comms.actSound[0]);
-      smsg.concat(msg);
-      Comms.pub(smsg, actState.soundTrack);
-      */
+      	  
   }
 
   if ( inactiveTimer.check() ) {

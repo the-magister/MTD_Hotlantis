@@ -18,7 +18,7 @@
 // devices with the light shield have access to D5-D8
 // careful with D3 and D8: pulled up
 // careful with D8: pulled up
-#define IGNITER_PIN D8
+#define IGNITER_PIN D1
 #define ON HIGH
 #define OFF LOW
 
@@ -85,7 +85,7 @@ void setup() {
   String myName = Comms.loadStuff("myName");
 
   // configure comms
-  Comms.begin(myName, processMessages, 99); // disable heartbeat LED
+  Comms.begin(myName, processMessages); 
   Comms.sub(myName + "/#"); // all my messages
 
   Serial << F("Startup complete.") << endl;
@@ -121,10 +121,15 @@ void loop() {
     else if ( lightGesture == "centerWhite") gestureCenterWhite();
     else ledA.fill_solid(CRGB::White);
 
+	// MGD: if you're not copying the animation to the other faces... where
+	// do we animate the other faces?  
     //ledC = ledB = ledA;  // Copy animation to each face
     FastLED.show();
   }
 }
+
+// MGD: see FastLED/colorutils.h for the methods you can use.  I don't think
+// all are implemented; see FastLED/pixelset.h for that.  
 
 void gestureCenterWhite() {
    ledA.fill_solid(CRGB::Black); centerA.fill_solid(CRGB::Green);
@@ -132,7 +137,7 @@ void gestureCenterWhite() {
    //ledC.fill_solid(CRGB::Black); centerC.fill_solid(CRGB::White);
 }
 
-// lifted from Examples->FastLED->DemoRee100
+// lifted from Examples->FastLED->DemoReel100
 void gestureRainbow() {
   static byte hue = 0;
   hue += 5;
