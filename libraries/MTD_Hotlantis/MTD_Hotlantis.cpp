@@ -160,6 +160,14 @@ void MTD_ESPHelper::MQTTcallback(char* topic, byte* payload, unsigned int length
 	this->processMessages(t, p);
 }
 
+bool MTD_ESPHelper::convBinary(char msg) {
+	if (msg == '0') {
+		return false;
+	} else {
+		return true;
+	}
+}
+
 // constructor plumbing
 MTD_ESPHelper::MTD_ESPHelper(netInfo *netList[], uint8_t netCount, uint8_t startIndex): ESPHelper(netList, netCount, startIndex) {}
 

@@ -11,6 +11,61 @@
 #include <ESPHelper.h>
 #include <ESPHelperFS.h>
 #include <MTD_Hotlantis.h>
+#include <FiniteStateMachine.h>
+#include <CircularBuffer.h>
+
+void idleEnter(), idle(), idle(); State Idle = State(idleEnter, idle, NULL);
+void gameplayEnter(), gameplay(); State Gameplay = State(gameplayEnter, gameplay, NULL);
+void customAnimationEnter(), customAnimation(); State CustomAnimation = State(customAnimationEnter, customAnimation, NULL);
+void winEnter(), win(); State Win = State(winEnter, win, NULL);
+
+// Debuging
+#define SILENCE false
+
+// Gameplay
+#define INTERACTIONS_TOWIN 15
+
+FSM stateMachine = FSM(Idle); // initialize state machine
+static Metro inactiveTimer(15UL * 1000UL);
+static Metro winTimer(30UL * 1000UL);
+static Metro customAnimationTimer(30UL * 1000UL);
+int numInteractions;  // The number of player interactions since gameplay start
+CircularBuffer<byte,7> buttonQueue;
+
+//Cheat codes
+struct CheatCode_t {
+  long hash;
+  char * code;
+  String name;
+  int track;
+};
+
+#define NUM_CHEATS 32
+CheatCode_t cheats[NUM_CHEATS];
+
+// Sounds
+#define LONELY_START 100
+#define OHAI_START 200
+#define GOODNUF_START 400
+#define GOODJOB_START 500
+#define WINNING_START 600
+#define FANFARE_START 300
+#define BEAT_START 700
+#define POS_CHANGE_START 800
+#define NEG_CHANGE_START 900
+#define GUNFIRE_START 950
+
+#define LONELY_NUM 10
+#define OHAI_NUM 14
+#define FANFARE_NUM 69
+#define GOODNUF_NUM 7  // 1
+#define GOODJOB_NUM 4  // 2
+#define WINNING_NUM 3  // 1
+#define BEAT_NUM 30
+#define POS_CHANGE_NUM 18
+#define NEG_CHANGE_NUM 22
+#define GUNFIRE_NUM 11
+#define PALETTE_NUM 0
 
 /*
    Collect all the "sense" topics, decide, then publish "act" topics.
@@ -92,6 +147,8 @@ void setup() {
   Comms.begin("gwf/controller", processSensors);
   Comms.sub("gwf/s/#"); // every sense topic
 
+  initCheatCodes();
+  
   Serial << F("Startup complete.") << endl;
 }
 
@@ -105,7 +162,6 @@ void loop() {
     mapSensorsToActions();
     // make those actions happen
     publishActions();
-
   }
 
   // I don't know.  What else do you want to do, periodically?
@@ -115,22 +171,44 @@ void loop() {
   }
 
   static bool playedIntro = false;
-  static Metro soundTimer(15UL * 1000UL);
+  static Metro soundTimer(3UL * 1000UL);
   if ( soundTimer.check() && !playedIntro) {
-      char msg[2];
-      itoa(300,msg,10);
-      actState.soundAction = "PlaySolo";
-      actState.soundTrack = msg;
+      if (Comms.getStatus() != FULL_CONNECTION) return;
+      
 
-      Serial << "***Playing intro sound" << endl;
+      Serial << "WIFI Connected" << endl;
+      
+      playTrack("PlaySolo", 100);
       playedIntro = true;
-
+      /*
       String smsg = String();
       smsg.concat(Comms.actSound[0]);
-      smsg.concat(actState.soundAction);
-      Serial << "Sending sound: " << smsg << endl;
+      smsg.concat(msg);
       Comms.pub(smsg, actState.soundTrack);
+      */
   }
+
+  if ( inactiveTimer.check() ) {
+    if (stateMachine.isInState(Gameplay)) {
+
+      stateMachine.transitionTo(Idle);  
+    }
+  }
+  if ( winTimer.check() ) {
+    if (stateMachine.isInState(Win)) {
+
+      stateMachine.transitionTo(Idle);  
+    }
+  }
+  if ( customAnimationTimer.check() ) {
+    if (stateMachine.isInState(CustomAnimation)) {
+
+      stateMachine.transitionTo(Idle);  
+    }
+  }
+
+
+  stateMachine.update();
 }
 
 void setColorPalette(byte timeDayOfWeek) {
@@ -145,6 +223,47 @@ void setColorPalette(byte timeDayOfWeek) {
     case 6: pal = "PartyColors_p"; break;
   }
   for ( byte i = 0; i < 3; i++ ) actState.lightMTD[i] = actState.lightBeacon[i] = pal;
+}
+
+// Initialize the cheat codes
+void initCheatCodes() {
+  int idx = 0;
+  setCheat(idx++,"bbbbbbb",0); // Test
+  setCheat(idx++,"aaabbcb",0); // Alan
+  setCheat(idx++,"aabaaca",1);  // Mike
+}
+
+void setCheat(int idx, char * code, int track) {
+  cheats[idx].code = code;
+  cheats[idx].hash = calcCheatHash(code);
+  cheats[idx].track = track;
+}
+
+long calcCheatHash(char * cheat) {
+  long hash = (cheat[0]-'a') + (cheat[1] - 'a') * 3 + (cheat[2] - 'a') * 9 + 
+    (cheat[3]-'a') * 27 + (cheat[4] - 'a') * 81 + (cheat[5] - 'a') * 243 + (cheat[6] - 'a') * 729;
+
+   Serial << "Cheat: " << cheat << " hash: " << hash << endl; 
+   return hash;
+}
+
+int checkCheats() {
+  if (buttonQueue.size() < 7) return -1;
+  
+  long hash = 0;
+  for(int i=0; i < 7; i++) {
+    hash += buttonQueue[i] * pow(3,i);  
+  }
+
+  Serial << "Current cheat hash: " << hash << endl;
+  for(int i=0; i < NUM_CHEATS; i++) {
+    if (cheats[i].hash == hash) {
+      Serial << " Got cheat code: " << cheats[i].code;
+      return cheats[i].track;  
+    }
+  }
+
+  return -1;
 }
 
 void mapSensorsToActions() {
@@ -206,22 +325,51 @@ void mapSensorsToActions() {
     // Sound
   }
 
+  if (stateMachine.isInState(Idle) && 
+     (sensorData.buttonMTD[0] || sensorData.buttonMTD[1] || sensorData.buttonMTD[2] ||
+      sensorData.buttonCannon[0] || sensorData.buttonCannon[1])) {
+    stateMachine.transitionTo(Gameplay);  
+  }
+
+  static int cannonTrack = -1;
+  
   // Any time effects
-  if ( sensorData.buttonCannon[0] || sensorData.buttonCannon[1] ) {
+  if ( cannonTrack == -1 && (sensorData.buttonCannon[0] || sensorData.buttonCannon[1] )) {
       Serial << "Playing Cannon Sound" << endl;
+
+      cannonTrack = chooseTrack(GUNFIRE_START,GUNFIRE_NUM);
+      playTrack("PlayLoop",cannonTrack);
+  } 
+  
+  if (cannonTrack >= 0 && (!sensorData.buttonCannon[0] && !sensorData.buttonCannon[1])) {
+    /*
       char msg[2];
-      itoa(951,msg,10);
-      actState.soundAction = "PlaySoloLoop";
-      actState.soundTrack = msg;
-  } else if (!sensorData.buttonCannon[0] && !sensorData.buttonCannon[1]) {
-      char msg[2];
-      itoa(951,msg,10);
+      itoa(cannonTrack,msg,10);
       actState.soundAction = "Stop";
       actState.soundTrack = msg;
+      */
+      playTrack("Stop",cannonTrack);
+      cannonTrack = -1;
   }
   
   // note we've done with updates
   sensorData.haveChanged = false;
+}
+
+void playTrack(String action, int track) {
+  
+  if (SILENCE) {
+    Serial << "Silenced.  act: " << action << " track: " << track << endl;
+    return;
+  } else {
+    Serial << "Playing.  act: " << action << " track: " << track << endl;  
+  }
+
+  char msg[2];
+  itoa(track,msg,10);
+  actState.soundAction = action;
+  actState.soundTrack = msg;
+  sensorData.haveChanged = true;
 }
 
 void publishActions() {
@@ -233,6 +381,7 @@ void publishActions() {
 
   // sound outputs
   if ( lastState.soundAction != actState.soundAction || lastState.soundTrack != actState.soundTrack ) {
+
     String msg = String();
     msg.concat(Comms.actSound[0]);
     msg.concat(actState.soundAction);
@@ -291,6 +440,70 @@ void printSensorData() {
   Serial << endl;
 }
 
+void idleEnter() {
+  Serial << "Entered Idle" << endl;
+
+  // Reset state
+  actState.soundAction = "";
+  actState.soundTrack = "";
+  numInteractions = 0;
+  buttonQueue.clear();
+}
+
+void idle() {
+  
+}
+
+void gameplayEnter() {
+  Serial << "Entered Gameplay" << endl;
+  
+  // Play OHAI
+  playTrack("PlaySolo",chooseTrack(OHAI_START,OHAI_NUM));
+
+  sensorData.haveChanged = true;
+
+}
+
+void gameplay() {
+  
+}
+
+void customAnimationEnter() {
+  Serial << " Custom Animation Started" << endl;
+  customAnimationTimer.reset();
+}
+
+void customAnimation() {
+}
+
+void winEnter() {
+    Serial << "Entered Win" << endl;
+  
+  // Play WIN
+  playTrack("PlaySolo",chooseTrack(FANFARE_START,FANFARE_NUM));
+
+  sensorData.haveChanged = true;
+  winTimer.reset();
+}
+
+void win() {
+}
+
+// randomly choose a track from the available 
+int chooseTrack(int strack, int len) {
+  return (int) random(strack,strack+len); 
+}
+
+void registerInteraction() {
+    inactiveTimer.reset();    
+    numInteractions++;
+
+    Serial << "NumInteractions: " << numInteractions << endl;
+    if (stateMachine.isInState(Gameplay) && numInteractions >= INTERACTIONS_TOWIN) {
+      stateMachine.transitionTo(Win);  
+    }
+}
+
 // processes messages that arrive
 void processSensors(String topic, String message) {
 
@@ -307,23 +520,30 @@ void processSensors(String topic, String message) {
     if ( topic.indexOf("hour") ) sensorData.timeHour = (byte)message.toInt();
     if ( topic.indexOf("dayofweek") ) sensorData.timeDayOfWeek = (byte)message.toInt();
   } else if ( topic.indexOf("button") != -1 && index != 99 ) {
-    sensorData.buttonMTD[index] = (boolean)message.toInt();
+    sensorData.buttonMTD[index] = Comms.convBinary(message[0]);
+    if (sensorData.buttonMTD[index]) {
+      registerInteraction();
+      buttonQueue.push(index);
+      Serial << "buttonQueue size: " << buttonQueue.size() << endl;
+      int ctrack = checkCheats();
+      if (ctrack > -1) {
+       if (stateMachine.isInState(Gameplay)) {
+          playTrack("PlaySolo",chooseTrack(FANFARE_START,ctrack));
+
+          sensorData.haveChanged = true;
+
+          stateMachine.transitionTo(CustomAnimation);  
+        }     
+      }
+    }
+    Serial << "Got a button" << endl;
   } else if ( topic.indexOf("motion") != -1 && index != 99  ) {
     sensorData.motionMTD[index] = (boolean)message.toInt();
+    if (sensorData.motionMTD[index]) registerInteraction();
   } else if ( topic.indexOf("cannon") != -1 && index != 99  ) {
-//    sensorData.buttonCannon[index] = (boolean)message.toInt();
     Serial << "Handle cannon message.  " << message << endl;
-
-    // Handle as strings first and binary second
-    if (message[0] == '0') {
-      Serial << "Cannon released" << endl;
-      sensorData.buttonCannon[index] = false;
-    } else if (message[0] == '1') {
-      Serial << "Cannon fired.  index: " << index << endl;
-      sensorData.buttonCannon[index] = true;      
-    } else {
-      Serial << "Got a weird cannon value: " << message[0] << endl;
-    }
+    inactiveTimer.reset();  // Don't register interactions here, we want tower interactions for winning
+    sensorData.buttonCannon[index] = Comms.convBinary(message[0]);
   } else {
     Serial << "I'm not sure why, but here we are. index=" << index << endl;
   }

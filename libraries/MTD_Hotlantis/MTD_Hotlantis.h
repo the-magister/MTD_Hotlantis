@@ -27,6 +27,8 @@ public:
 	// topics and messages
 	String loadStuff(String key);
 	void saveStuff(String key, String value);
+
+        bool convBinary(char msg);
 	
 	// MQTT topics, roughly grouped by structure.
 	// name is "sense" if it's a sensor the Controller can read (Input)
