@@ -73,9 +73,13 @@ public:
 	const String actBeaconIgniter[3] = { 
 		"gwf/a/beacon/A/igniter", "gwf/a/beacon/B/igniter", "gwf/a/beacon/C/igniter"
 	}; // 0-1
-	const String actBeaconFlame[3] = { 
-		"gwf/a/beacon/A/fire", "gwf/a/beacon/B/fire", "gwf/a/beacon/C/fire"
-	}; // 0-PWMRANGE 
+	const String actBeaconFlame[6] = { 
+		"gwf/a/beacon/A/fire", "gwf/a/beacon/B/fire", "gwf/a/beacon/C/fire", 
+		// have values in the range 0-pwmrange
+		"gwf/a/beacon/pwmrange", // set the upper range for fire messages; 1023 default
+		"gwf/a/beacon/pwmfreq", // set the valve frequency, Hz; 60Hz default
+		"gwf/a/beacon/ramptime" // duration of valve change, ms; 5000ms default
+	}; 
 	// EL wire lighting
 	const String actBeaconLight[3] = { 
 		"gwf/a/beacon/A/light", "gwf/a/beacon/B/light", "gwf/a/beacon/C/light"

@@ -10,14 +10,13 @@
 #include <ESPHelper.h>
 #include <ESPHelperFS.h>
 #include <MTD_Hotlantis.h>
+#include <Ramp.h>
 
 // Assumptions:
 
-// 1. propane has a bypass that constantly flows for pilot activity.
+// 1. proportional control valve power is 24VDC, and the supply is controlled by a switch.
 
-// 2. proportional control valve power is 24VDC, and the supply is controlled by a switch.
-
-// 3. each tower has a proportional control valve:
+// 2. each tower has a proportional control valve:
 //    SD8202G004V: 35 psi max, 1/4" NPT, 0.50 Cv
 //    We control these by a MOSFET and PWM.
 #define PROP_A_PIN D5
@@ -41,16 +40,11 @@ Bounce igniterButton = Bounce();
 // also used
 // D4, GPIO2, BUILTIN_LED
 
-// automagically shutdown
-bool flameOn = false;
-Metro flameAutoShutdown(30UL * 1000UL);
-
 void setup() {
   // set them off, then enable pin.
   analogWrite(PROP_A_PIN, 0); pinMode(PROP_A_PIN, OUTPUT);
   analogWrite(PROP_B_PIN, 0); pinMode(PROP_B_PIN, OUTPUT);
   analogWrite(PROP_C_PIN, 0); pinMode(PROP_C_PIN, OUTPUT);
-  analogWriteFreq(PROP_FREQ);
 
   // wait a tic
   delay(250);
@@ -65,11 +59,45 @@ void setup() {
 
   // configure comms
   Comms.begin("Flame", processMessages);
-  Comms.sub(Comms.actBeaconFlame[0]);
-  Comms.sub(Comms.actBeaconFlame[1]);
-  Comms.sub(Comms.actBeaconFlame[2]);
+  Comms.sub(Comms.actBeaconFlame[0]); // flame level A
+  Comms.sub(Comms.actBeaconFlame[1]); // flame level B
+  Comms.sub(Comms.actBeaconFlame[2]); // flame level C
+  Comms.sub(Comms.actBeaconFlame[3]); // set pwmrange
+  Comms.sub(Comms.actBeaconFlame[4]); // set pwmfreq
+  Comms.sub(Comms.actBeaconFlame[5]); // set ramptime
+
+  // configure proportional valves
+  setPwmFreq(PROP_FREQ);
+  setPwmRange(PWMRANGE); // 0..1023
 
   Serial << F("Startup complete.") << endl;
+}
+
+void setPwmRange(int range) {
+  range = constrain(range, 0, 65535);
+  Serial << "Flame.  Setting PWM range to: 0-" << range << endl;
+  analogWriteFreq(range);
+}
+void setPwmFreq(int freq) {
+  freq = constrain(freq, 0, 10000);
+  Serial << "Flame.  Setting PWM frequency to: " << freq << endl;
+  analogWriteFreq(freq);
+}
+
+// automagically shutdown
+bool flameOn = false;
+Metro flameAutoShutdown(30UL * 1000UL);
+
+
+// target for ramps
+rampInt valveRamp[3];
+unsigned long rampTime = 5000UL;
+#define INTERP_MODE LINEAR
+#define LOOP_MODE ONCEFORWARD
+void rampValves() {
+  analogWrite(PROP_A_PIN, valveRamp[0].update());
+  analogWrite(PROP_B_PIN, valveRamp[1].update());
+  analogWrite(PROP_C_PIN, valveRamp[2].update());
 }
 
 void loop() {
@@ -84,30 +112,22 @@ void loop() {
     Comms.pub(Comms.actBeaconIgniter[2], Comms.messageBinary[igniterButton.read() == IGNITER_ON]);
   }
 
-  // maybe shutdown?
-  static boolean doAutoShutdown = false;
-  if ( doAutoShutdown && flameOn && flameAutoShutdown.check() ) {
-    Serial << "Bad! Shutting down flame automatically." << endl;
-    analogWrite(PROP_A_PIN, 0);
-    analogWrite(PROP_B_PIN, 0);
-    analogWrite(PROP_C_PIN, 0);
-    flameOn = false;
-  }
+  // flame handling
+  rampValves();
 }
 
 // processes messages that arrive
 void processMessages(String topic, String message) {
   // amount?
-  int proportion = constrain(message.toInt(), 0, PWMRANGE);
-
-  // set an automatic timer to shutdown
-  if ( proportion > 0 ) {
-    flameOn = true;
-    flameAutoShutdown.reset();
-  }
+  int val = constrain(message.toInt(), 0, 65535);
 
   // do it
-  if ( topic.indexOf("/A/") != -1 ) analogWrite(PROP_A_PIN, proportion);
-  if ( topic.indexOf("/B/") != -1 ) analogWrite(PROP_B_PIN, proportion);
-  if ( topic.indexOf("/C/") != -1 ) analogWrite(PROP_C_PIN, proportion);
+  if ( topic.indexOf("/A/") != -1 ) valveRamp[0].go(val, rampTime, INTERP_MODE, LOOP_MODE);
+  if ( topic.indexOf("/B/") != -1 ) valveRamp[1].go(val, rampTime, INTERP_MODE, LOOP_MODE);
+  if ( topic.indexOf("/C/") != -1 ) valveRamp[2].go(val, rampTime, INTERP_MODE, LOOP_MODE);
+
+  if ( topic.indexOf("pwmrange") != -1 ) setPwmRange(val); 
+  if ( topic.indexOf("pwmfreq") != -1 ) setPwmFreq(val); 
+  
+  if ( topic.indexOf("ramptime") != -1 ) rampTime = (unsigned long)val;
 }
