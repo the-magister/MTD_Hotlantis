@@ -40,6 +40,39 @@ Bounce igniterButton = Bounce();
 // also used
 // D4, GPIO2, BUILTIN_LED
 
+void setPwmRange(int range) {
+  range = constrain(range, 0, 65535);
+  Serial << "Flame.  Setting PWM range to: 0-" << range << endl;
+  analogWriteRange(range);
+}
+void setPwmFreq(int freq) {
+  freq = constrain(freq, 0, 10000);
+  Serial << "Flame.  Setting PWM frequency to: " << freq << endl;
+  analogWriteFreq(freq);
+}
+
+// target for ramps
+rampInt valveRamp[3];
+unsigned long rampTime = 5000UL;
+void setRampTime(unsigned long val) {
+  rampTime = val;
+  Serial << "Flame.  Setting ramp time to: " << rampTime << endl;
+}
+#define INTERP_MODE LINEAR
+//#define LOOP_MODE ONCEFORWARD
+#define LOOP_MODE FORTHANDBACK
+void rampValves() {
+//  float gamma = 0.5; // Correction factor
+//  int corr = (int)(pow((float)valveRamp[0].update() / (float)1023, gamma) * 1023 + 0.5);
+//  Serial <<  valveRamp[0].update() << " -> " << corr << endl;
+//  delay(100);
+  analogWrite(PROP_A_PIN, valveRamp[0].update());
+  analogWrite(PROP_B_PIN, valveRamp[1].update());
+  analogWrite(PROP_C_PIN, valveRamp[2].update());
+}
+
+
+
 void setup() {
   // set them off, then enable pin.
   analogWrite(PROP_A_PIN, 0); pinMode(PROP_A_PIN, OUTPUT);
@@ -73,33 +106,6 @@ void setup() {
   Serial << F("Startup complete.") << endl;
 }
 
-void setPwmRange(int range) {
-  range = constrain(range, 0, 65535);
-  Serial << "Flame.  Setting PWM range to: 0-" << range << endl;
-  analogWriteFreq(range);
-}
-void setPwmFreq(int freq) {
-  freq = constrain(freq, 0, 10000);
-  Serial << "Flame.  Setting PWM frequency to: " << freq << endl;
-  analogWriteFreq(freq);
-}
-
-// automagically shutdown
-bool flameOn = false;
-Metro flameAutoShutdown(30UL * 1000UL);
-
-
-// target for ramps
-rampInt valveRamp[3];
-unsigned long rampTime = 5000UL;
-#define INTERP_MODE LINEAR
-#define LOOP_MODE ONCEFORWARD
-void rampValves() {
-  analogWrite(PROP_A_PIN, valveRamp[0].update());
-  analogWrite(PROP_B_PIN, valveRamp[1].update());
-  analogWrite(PROP_C_PIN, valveRamp[2].update());
-}
-
 void loop() {
   // comms handling
   Comms.loop();
@@ -129,5 +135,5 @@ void processMessages(String topic, String message) {
   if ( topic.indexOf("pwmrange") != -1 ) setPwmRange(val); 
   if ( topic.indexOf("pwmfreq") != -1 ) setPwmFreq(val); 
   
-  if ( topic.indexOf("ramptime") != -1 ) rampTime = (unsigned long)val;
+  if ( topic.indexOf("ramptime") != -1 ) setRampTime((unsigned long)val);
 }
