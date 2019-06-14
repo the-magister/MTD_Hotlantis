@@ -23,7 +23,7 @@ void winEnter(), win(); State Win = State(winEnter, win, NULL);
 #define SILENCE false
 
 // Gameplay
-#define INTERACTIONS_TOWIN 15
+#define INTERACTIONS_TO_WIN 30
 
 FSM stateMachine = FSM(Idle); // initialize state machine
 static Metro inactiveTimer(15UL * 1000UL);
@@ -31,6 +31,11 @@ static Metro winTimer(30UL * 1000UL);
 static Metro customAnimationTimer(30UL * 1000UL);
 int numInteractions;  // The number of player interactions since gameplay start
 CircularBuffer<byte,7> buttonQueue;
+static int infinite = 60*60*60UL;
+static int buttonFlash = 1UL * 500UL;
+static Metro buttonMTDTimer[3] = {Metro(infinite), Metro(infinite), Metro(infinite)}; 
+static int winLockout = 2 * 60UL * 1000UL;
+static Metro winLockoutTimer(infinite);
 
 //Cheat codes
 struct CheatCode_t {
@@ -202,7 +207,13 @@ void loop() {
     }
   }
 
-
+  for(int i=0; i < 3; i++) {
+    if (buttonMTDTimer[i].check()) {
+      actState.lightBeacon[i] = "black";
+      sensorData.haveChanged = true;
+    }    
+  }
+  
   stateMachine.update();
 }
 
@@ -223,7 +234,7 @@ void setColorPalette(byte timeDayOfWeek) {
 // Initialize the cheat codes
 void initCheatCodes() {
   int idx = 0;
-  setCheat(idx++,"bbbbbbb",0); // Test
+  //setCheat(idx++,"bbbbbbb",0); // Test
   setCheat(idx++,"aaabbcb",0); // Alan
   setCheat(idx++,"aabaaca",1);  // Mike
 }
@@ -311,6 +322,15 @@ void mapSensorsToActions() {
 
     // Light
 
+    for(int i=0; i < 3; i++) {
+      if (sensorData.buttonMTD[i]) {
+        // Flash the light to 
+        actState.lightBeacon[i] = "centerWhite";
+        buttonMTDTimer[i].interval(buttonFlash);
+        buttonMTDTimer[i].reset();
+      }
+    }
+    
     // Flame
     // try not to blow everything up.
     // did you run the igniter before fire?
@@ -322,6 +342,7 @@ void mapSensorsToActions() {
 
   if (stateMachine.isInState(Idle) && 
      (sensorData.buttonMTD[0] || sensorData.buttonMTD[1] || sensorData.buttonMTD[2] ||
+      sensorData.motionMTD[0] || sensorData.motionMTD[1] || sensorData.motionMTD[2] ||
       sensorData.buttonCannon[0] || sensorData.buttonCannon[1])) {
     stateMachine.transitionTo(Gameplay);  
   }
@@ -439,6 +460,14 @@ void idleEnter() {
   Serial << "Entered Idle" << endl;
 
   // Reset state
+  actState.primePump[0] = false;
+  actState.primePump[1] = false;
+  actState.boostPump[0] = false;
+  actState.boostPump[1] = false;
+  actState.cannonSpray = false;
+  actState.beaconSpray[0] = false;
+  actState.beaconSpray[1] = false;
+  actState.beaconSpray[2] = false;
   actState.soundAction = "";
   actState.soundTrack = "";
   numInteractions = 0;
@@ -451,7 +480,10 @@ void idle() {
 
 void gameplayEnter() {
   Serial << "Entered Gameplay" << endl;
-  
+
+  winLockoutTimer.interval(winLockout);
+  winLockoutTimer.reset();
+
   // Play OHAI
   playTrack("PlaySolo",chooseTrack(OHAI_START,OHAI_NUM));
 
@@ -494,7 +526,7 @@ void registerInteraction() {
     numInteractions++;
 
     Serial << "NumInteractions: " << numInteractions << endl;
-    if (stateMachine.isInState(Gameplay) && numInteractions >= INTERACTIONS_TOWIN) {
+    if (stateMachine.isInState(Gameplay) && numInteractions >= INTERACTIONS_TO_WIN && winLockoutTimer.check()) {
       stateMachine.transitionTo(Win);  
     }
 }
@@ -523,7 +555,7 @@ void processSensors(String topic, String message) {
       int ctrack = checkCheats();
       if (ctrack > -1) {
        if (stateMachine.isInState(Gameplay)) {
-          playTrack("PlaySolo",chooseTrack(FANFARE_START,ctrack));
+          playTrack("PlaySolo",FANFARE_START + ctrack);
 
           sensorData.haveChanged = true;
 

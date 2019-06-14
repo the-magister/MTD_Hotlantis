@@ -58,7 +58,8 @@ CRGBSet rightB = ledB(LEDS_LEFT_COL + LEDS_CENTER_COL, LEDS_LEFT_COL + LEDS_CENT
 CRGBSet rightC = ledC(LEDS_LEFT_COL + LEDS_CENTER_COL, LEDS_LEFT_COL + LEDS_CENTER_COL + LEDS_RIGHT_COL - 1);
 
 // track what we're doing with the lights.
-String lightGesture = "maxWhite";
+String lightGesture = "centerWhite";
+boolean gestureChanged = false;
 
 void setup() {
   // set them off, then enable pin.
@@ -70,6 +71,7 @@ void setup() {
 
   // for local output
   Serial.begin(115200);
+  
   Serial << endl << endl << endl << "Startup: begin." << endl;
 
   // LEDs
@@ -119,20 +121,42 @@ void loop() {
     else if ( lightGesture == "blue" ) ledA.fill_solid(CRGB::Blue);
     else if ( lightGesture == "maxWhite" ) ledA.fill_solid(CRGB::White);
     else if ( lightGesture == "centerWhite") gestureCenterWhite();
-    else ledA.fill_solid(CRGB::White);
+    else if ( lightGesture == "black") ledA.fill_solid(CRGB::Black);
+    else if ( lightGesture == "randomPattern") {
+      static int randomIdx = random(0,6);
+      if (gestureChanged) {
+        randomIdx = random(0,6);        
+      }
+      
+      switch(randomIdx) {
+        case 0: gestureRainbow(); break;
+        case 1: gestureRainbow(); gestureGlitter(50); break;
+        case 2: gestureConfetti(); break;
+        case 3: gestureSinelon(); break;
+        case 4: gestureBPM(); break;
+        case 5: gestureJuggle(); break;
+      }
+    }
+    else {
+      Serial << "Unknown gesture: " << lightGesture << endl;
+      ledA.fill_solid(CRGB::White);
+    }
 
 	// MGD: if you're not copying the animation to the other faces... where
 	// do we animate the other faces?  
-    //ledC = ledB = ledA;  // Copy animation to each face
+    ledC = ledB = ledA;  // Copy animation to each face
     FastLED.show();
   }
+
+  gestureChanged = false;
 }
 
 // MGD: see FastLED/colorutils.h for the methods you can use.  I don't think
 // all are implemented; see FastLED/pixelset.h for that.  
 
 void gestureCenterWhite() {
-   ledA.fill_solid(CRGB::Black); centerA.fill_solid(CRGB::Green);
+  //Serial << "CenterWhite" << endl;
+   ledA.fill_solid(CRGB::Black); centerA.fill_solid(CRGB::White);
    //ledB.fill_solid(CRGB::Black); centerB.fill_solid(CRGB::White);
    //ledC.fill_solid(CRGB::Black); centerC.fill_solid(CRGB::White);
 }
@@ -206,6 +230,7 @@ void processMessages(String topic, String message) {
   } else if ( topic.endsWith("light") ) {
     // LED lights; save it
     lightGesture = message;
+    gestureChanged = true;
     // as a stupid example
   }
 }
