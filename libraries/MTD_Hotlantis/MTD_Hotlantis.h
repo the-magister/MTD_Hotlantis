@@ -75,9 +75,23 @@ public:
 	const String actBeaconIgniter[3] = { 
 		"gwf/a/beacon/A/igniter", "gwf/a/beacon/B/igniter", "gwf/a/beacon/C/igniter"
 	}; // 0-1
-	const String actBeaconFlame[3] = { 
-		"gwf/a/beacon/A/fire", "gwf/a/beacon/B/fire", "gwf/a/beacon/C/fire"
-	}; // 0-PWMRANGE 
+	const String actBeaconFlame[8] = { 
+		// Send the flame effect level.  Values in 0..pwmrange
+		"gwf/a/beacon/A/fire", 
+		"gwf/a/beacon/B/fire", 
+		"gwf/a/beacon/C/fire", 
+		// set the granularity of the ADC.  1023 default.
+		"gwf/a/beacon/pwmrange", 
+		// set the frequency for solenoid operation. 60 Hz default.
+		"gwf/a/beacon/pwmfreq", 
+		// ramps are used to smooth transitions.  See Ramp.h for options.
+		// set the time it takes to change between /fire values; 5000ms default
+		"gwf/a/beacon/ramptime",
+		// set the interpolation mode for ramp; LINEAR default. may want QUADRATIC_OUT, CUBIC_OUT to get more flow at the lower end of the pwmrange
+		"gwf/a/beacon/rampmode",
+		// set the loop for ramp; ONCEFORWARD default. may want FORTHANDBACK for cycling between the last two values.
+		"gwf/a/beacon/ramploop"
+	}; 
 	// EL wire lighting
 	const String actBeaconLight[3] = { 
 		"gwf/a/beacon/A/light", "gwf/a/beacon/B/light", "gwf/a/beacon/C/light"
