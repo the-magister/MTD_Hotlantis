@@ -1,8 +1,10 @@
-// IDE Settings:
-// Tools->Board : "WeMos D1 R1" (!!!!!! NOTE !!!!!!)
-// Tools->Flash Size : "4M (1M SPIFFS)"
-// Tools->CPU Frequency : "160 MHz"
-// Tools->Upload Speed : "921600"
+/*
+   IDE Settings:
+   Tools->Board : "WeMos D1 R2 & mini"
+   Tools->Flash Size : "4M (1M SPIFFS)"
+   Tools->CPU Frequency : "160 MHz"
+   Tools->Upload Speed : "921600"
+*/
 
 #include <Streaming.h>
 #include <Metro.h>

@@ -48,6 +48,9 @@ bool MTD_ESPHelper::begin( String name, void (*processMessages)(String topic, St
 		ESPHelper::enableHeartbeat(heartBeatPin);
 	}
 
+	// Sub to Command and Control topic
+	sub("gwf/cc/#");
+
 	// process Serial commands
 	Serial.setTimeout(100);
 	
@@ -83,6 +86,7 @@ int MTD_ESPHelper::loop(boolean publishSerialCommands) {
 			Serial << "Parsed successfully." << endl;
 			// split
 			String topic = in.substring(0,split);
+
 			String message = in.substring(split+1);
 			// send, but not retained
 			this->pub(topic, message, false);
@@ -155,8 +159,12 @@ void MTD_ESPHelper::MQTTcallback(char* topic, byte* payload, unsigned int length
 	payload[length] = '\0';
 	String t = topic;
 	String p = String((char *)payload);
-	
     Serial << this->myName << " <-- [" << t << "]=[" << p << "]" << endl;
+
+	if (t.indexOf("gwf/cc/reboot") != -1) {
+		ESP.restart();
+		return;
+	}	
 	this->processMessages(t, p);
 }
 
