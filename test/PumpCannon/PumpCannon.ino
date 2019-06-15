@@ -29,7 +29,7 @@ byte pumpPin1 = D1;
 byte pumpPin2 = D2;
 
 // Assuming we have one solenoid hooked up
-byte solenoidPin1 = D5;
+byte cannonPin1 = D5;
 
 #define ON HIGH
 #define OFF LOW
@@ -41,7 +41,7 @@ void setup() {
   // set them off, then enable pin.
   digitalWrite(pumpPin1, OFF); pinMode(pumpPin1, OUTPUT);
   digitalWrite(pumpPin2, OFF); pinMode(pumpPin2, OUTPUT);
-  digitalWrite(solenoidPin1, OFF); pinMode(solenoidPin1, OUTPUT);
+  digitalWrite(cannonPin1, OFF); pinMode(cannonPin1, OUTPUT);
 
   delay(250); // wait a tick
 
@@ -78,9 +78,11 @@ void processMessages(String topic, String message) {
   byte pin;
   if ( topic.indexOf("pump") != -1 ) {
     digitalWrite(pumpPin1, setting);
+    delay(500);
     digitalWrite(pumpPin2, setting);
+    delay(500);
   } else if ( topic.indexOf("cannon") != -1 ) {    
-    digitalWrite(solenoidPin1, setting);
+    digitalWrite(cannonPin1, setting);
   }
 
 }
