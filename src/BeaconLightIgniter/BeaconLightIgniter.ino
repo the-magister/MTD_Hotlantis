@@ -18,7 +18,7 @@
 // devices with the light shield have access to D5-D8
 // careful with D3 and D8: pulled up
 // careful with D8: pulled up
-#define IGNITER_PIN D8
+#define IGNITER_PIN D1
 #define ON HIGH
 #define OFF LOW
 
@@ -58,7 +58,7 @@ CRGBSet rightB = ledB(LEDS_LEFT_COL + LEDS_CENTER_COL, LEDS_LEFT_COL + LEDS_CENT
 CRGBSet rightC = ledC(LEDS_LEFT_COL + LEDS_CENTER_COL, LEDS_LEFT_COL + LEDS_CENTER_COL + LEDS_RIGHT_COL - 1);
 
 // track what we're doing with the lights.
-String lightGesture = "BPM";
+String lightGesture = "maxWhite";
 
 void setup() {
   // set them off, then enable pin.
@@ -81,13 +81,11 @@ void setup() {
   Serial << F(" done.") << endl;
 
   // bootstrap, if needed.
-  if ( true ) {
-    Comms.saveStuff("myName", "gwf/a/beacon/A");
-  }
+//  Comms.saveStuff("myName", "gwf/a/beacon/C");
   String myName = Comms.loadStuff("myName");
 
   // configure comms
-  Comms.begin(myName, processMessages, 99); // disable heartbeat LED
+  Comms.begin(myName, processMessages); 
   Comms.sub(myName + "/#"); // all my messages
 
   Serial << F("Startup complete.") << endl;
@@ -101,7 +99,7 @@ void loop() {
   Comms.loop();
 
   // are we bored yet?
-  if ( (millis() - lastTrafficTime) > (10UL * 1000UL) ) {
+  if ( (millis() - lastTrafficTime) > (20UL * 1000UL) ) {
     lightGesture = "BPM";
   }
 
@@ -119,14 +117,27 @@ void loop() {
     else if ( lightGesture == "red" ) ledA.fill_solid(CRGB::Red);
     else if ( lightGesture == "green" ) ledA.fill_solid(CRGB::Green);
     else if ( lightGesture == "blue" ) ledA.fill_solid(CRGB::Blue);
+    else if ( lightGesture == "maxWhite" ) ledA.fill_solid(CRGB::White);
+    else if ( lightGesture == "centerWhite") gestureCenterWhite();
     else ledA.fill_solid(CRGB::White);
 
-    ledC = ledB = ledA;
+	// MGD: if you're not copying the animation to the other faces... where
+	// do we animate the other faces?  
+    //ledC = ledB = ledA;  // Copy animation to each face
     FastLED.show();
   }
 }
 
-// lifted from Examples->FastLED->DemoRee100
+// MGD: see FastLED/colorutils.h for the methods you can use.  I don't think
+// all are implemented; see FastLED/pixelset.h for that.  
+
+void gestureCenterWhite() {
+   ledA.fill_solid(CRGB::Black); centerA.fill_solid(CRGB::Green);
+   //ledB.fill_solid(CRGB::Black); centerB.fill_solid(CRGB::White);
+   //ledC.fill_solid(CRGB::Black); centerC.fill_solid(CRGB::White);
+}
+
+// lifted from Examples->FastLED->DemoReel100
 void gestureRainbow() {
   static byte hue = 0;
   hue += 5;
