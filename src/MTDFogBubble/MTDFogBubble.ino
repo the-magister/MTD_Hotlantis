@@ -20,10 +20,10 @@
 // D4, GPIO2, BUILTIN_LED, TDX1
 // connected to "DI" on MAX3485 
 DMXESPSerial dmx;
-#define DMX_CHAN_A 1
-#define DMX_CHAN_B 2
-#define DMX_CHAN_C 3
-#define DMX_CHAN_D 4
+#define DMX_CHAN_A 1 // bubbler
+#define DMX_CHAN_B 2 // unassigned?
+#define DMX_CHAN_C 3 // unassigned?
+#define DMX_CHAN_D 4 // unassigned?
 
 void setup() {
   // set them off, then enable pin.
@@ -40,13 +40,14 @@ void setup() {
   Serial << endl << endl << endl << "Startup: begin." << endl;
 
   // bootstrap new microcontrollers, if needed.
-  if ( true ) {
+  if ( false ) {
     Comms.saveStuff("myName", "FogBubbleStuff");
   }
 
   // configure comms
   // Note, I'm turning off heartbeat.  That pin is used for DMX control.
   Comms.begin(Comms.loadStuff("myName"), processMessages, 99); 
+  
   // subs
   Comms.sub(Comms.actMTDFogBubbleEtc[0]); 
   Comms.sub(Comms.actMTDFogBubbleEtc[1]); 
@@ -61,9 +62,8 @@ void loop() {
   // comms handling
   Comms.loop();
 
-  // update the DMX bus.  Not strictly neccessary, but get us a heartbeat
-  // since the pin for DMX send is wired to the internal LED.
-  static Metro updateDMX(5000UL);
+  // update the DMX bus.  
+  static Metro updateDMX(10UL);
   if( updateDMX.check() && Comms.getStatus()==FULL_CONNECTION ) {
     dmx.update();
     updateDMX.reset();

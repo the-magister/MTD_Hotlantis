@@ -19,7 +19,7 @@ public:
 	int loop(boolean publishSerialCommands=true);
 	
 	// publishing sugar
-	void pub(String topic, String payload, bool retain=true);
+	void pub(String topic, String payload, bool retain=false);
 	
 	// subscribing sugar.  
 	bool sub(String topic);
@@ -40,7 +40,7 @@ public:
 	// Motion sensors under the MTD arches
 	const String senseMTDMotion[3] = { 
 		"gwf/s/mtd/A/motion", "gwf/s/mtd/B/motion", "gwf/s/mtd/C/motion" 
-	}; // 0,1
+	}; // 0,1o
 	// Lighting controllers
 	const String actMTDLight[3] = { 
 		"gwf/a/mtd/A/light", "gwf/a/mtd/B/light", "gwf/a/mtd/C/light"
