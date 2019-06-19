@@ -93,7 +93,10 @@ void setup() {
   analogWrite(PROP_A_PIN, 0); pinMode(PROP_A_PIN, OUTPUT);
   analogWrite(PROP_B_PIN, 0); pinMode(PROP_B_PIN, OUTPUT);
   analogWrite(PROP_C_PIN, 0); pinMode(PROP_C_PIN, OUTPUT);
-
+  valveRamp[0].go(0, 0, NONE, ONCEFORWARD);
+  valveRamp[1].go(0, 0, NONE, ONCEFORWARD);
+  valveRamp[2].go(0, 0, NONE, ONCEFORWARD);
+ 
   // wait a tic
   delay(250);
 
@@ -107,6 +110,13 @@ void setup() {
 
   // configure comms
   Comms.begin("Flame", processMessages);
+
+  // set QoS=1. 
+  // we handle flame effects, so it's important that those commands get received with high fidelity.
+  // wouldn't like to drop a "flame=off" message, for example.
+  Comms.setMQTTQOS(1);
+
+  // sub
   for( byte i=0; i<8; i++ ) Comms.sub( Comms.actBeaconFlame[i] );
 
   // configure proportional valves

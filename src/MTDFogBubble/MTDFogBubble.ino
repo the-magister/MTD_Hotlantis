@@ -47,6 +47,10 @@ void setup() {
   // configure comms
   // Note, I'm turning off heartbeat.  That pin is used for DMX control.
   Comms.begin(Comms.loadStuff("myName"), processMessages, 99); 
+
+  // set QoS=1. Our WiFi connection from within the Fog machine is poor, and 
+  // we'd like to get commands reliably.
+  Comms.setMQTTQOS(1);
   
   // subs
   Comms.sub(Comms.actMTDFogBubbleEtc[0]); 
