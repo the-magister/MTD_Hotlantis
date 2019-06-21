@@ -25,6 +25,7 @@ void winEnter(), win(); State Win = State(winEnter, win, NULL);
 
 // Debuging
 #define SILENCE false
+#define FORCE_DAYTIME false
 
 // Gameplay
 #define INTERACTIONS_TO_WIN 30
@@ -330,7 +331,7 @@ void mapSensorsToActions() {
 
   // Daytime: water, sound
   // Nightime: flame, light, fog, sound
-  if( sensorData.timeHour >= 5 && sensorData.timeHour < (8+12) ) {
+  if( FORCE_DAYTIME || (sensorData.timeHour >= 5 && sensorData.timeHour < (8+12)) ) {
     // Daytime
 
     // Water
@@ -628,7 +629,6 @@ void registerInteraction() {
 
 // processes messages that arrive
 void processSensors(String topic, String message) {
-
   // is there an index A,B,C?
   byte index = 99;
   if ( topic.indexOf("/A/") != -1 ) index = 0;
@@ -639,8 +639,12 @@ void processSensors(String topic, String message) {
 
   // check the topics, store the message.
   if ( topic.indexOf("clock") != -1 ) {
-    if ( topic.indexOf("hour") ) sensorData.timeHour = (byte)message.toInt();
-    if ( topic.indexOf("dayofweek") ) sensorData.timeDayOfWeek = (byte)message.toInt();
+    if ( topic.indexOf("hour") != -1) {
+      sensorData.timeHour = (byte)message.toInt();
+    }
+    if ( topic.indexOf("dayofweek") != -1) {
+      sensorData.timeDayOfWeek = (byte)message.toInt();
+    }
   } else if ( topic.indexOf("button") != -1 && index != 99 ) {
     sensorData.buttonMTD[index] = Comms.convBinary(message[0]);
     if (sensorData.buttonMTD[index]) {

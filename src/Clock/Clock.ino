@@ -77,14 +77,14 @@ void loop() {
     static String lastHour = "";
     String hour = String( Clock.getHour(h12, PM) );
     if ( hour != lastHour ) {
-      Comms.pub(Comms.senseClock[0], hour);
+      Comms.pub(Comms.senseClock[0], hour,true);
       lastHour = hour;
     }
 
     static String lastDayofweek = "";
     String dayofweek = String( Clock.getDoW() );
     if ( dayofweek != lastDayofweek ) {
-      Comms.pub(Comms.senseClock[1], dayofweek);
+      Comms.pub(Comms.senseClock[1], dayofweek,true);
       lastDayofweek = dayofweek;
     }
 
