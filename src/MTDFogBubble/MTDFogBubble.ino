@@ -30,6 +30,8 @@ void setup() {
   digitalWrite(FOG_PIN, OFF); 
   pinMode(FOG_PIN, OUTPUT);
 
+  delay(1000);
+
   // DMX
   dmx.init();               // initialization for first 32 addresses by default
   //dmx.init(512)           // initialization for complete bus
