@@ -1,8 +1,10 @@
-// IDE Settings:
-// Tools->Board : "WeMos D1 R1" (!!!!!! NOTE !!!!!!)
-// Tools->Flash Size : "4M (1M SPIFFS)"
-// Tools->CPU Frequency : "160 MHz"
-// Tools->Upload Speed : "921600"
+/*
+   IDE Settings:
+   Tools->Board : "WeMos D1 R2 & mini"
+   Tools->Flash Size : "4M (1M SPIFFS)"
+   Tools->CPU Frequency : "160 MHz"
+   Tools->Upload Speed : "921600"
+*/
 
 #include <Streaming.h>
 #include <Metro.h>
@@ -58,7 +60,11 @@ CRGBSet rightB = ledB(LEDS_LEFT_COL + LEDS_CENTER_COL, LEDS_LEFT_COL + LEDS_CENT
 CRGBSet rightC = ledC(LEDS_LEFT_COL + LEDS_CENTER_COL, LEDS_LEFT_COL + LEDS_CENTER_COL + LEDS_RIGHT_COL - 1);
 
 // track what we're doing with the lights.
-String lightGesture = "maxWhite";
+String lightGesture = "centerWhite";
+boolean gestureChanged = false;
+
+// track we we're doing with the ignitor
+boolean ignitorActive = false;
 
 void setup() {
   // set them off, then enable pin.
@@ -70,6 +76,7 @@ void setup() {
 
   // for local output
   Serial.begin(115200);
+  
   Serial << endl << endl << endl << "Startup: begin." << endl;
 
   // LEDs
@@ -100,6 +107,10 @@ void loop() {
   // comms handling
   Comms.loop();
 
+  if (ignitorActive) {
+    return;
+  }
+  
   // are we bored yet?
   if ( (millis() - lastTrafficTime) > (20UL * 1000UL) ) {
     lightGesture = "BPM";
@@ -121,20 +132,42 @@ void loop() {
     else if ( lightGesture == "blue" ) ledA.fill_solid(CRGB::Blue);
     else if ( lightGesture == "maxWhite" ) ledA.fill_solid(CRGB::White);
     else if ( lightGesture == "centerWhite") gestureCenterWhite();
-    else ledA.fill_solid(CRGB::White);
+    else if ( lightGesture == "black") ledA.fill_solid(CRGB::Black);
+    else if ( lightGesture == "randomPattern") {
+      static int randomIdx = random(0,6);
+      if (gestureChanged) {
+        randomIdx = random(0,6);        
+      }
+      
+      switch(randomIdx) {
+        case 0: gestureRainbow(); break;
+        case 1: gestureRainbow(); gestureGlitter(50); break;
+        case 2: gestureConfetti(); break;
+        case 3: gestureSinelon(); break;
+        case 4: gestureBPM(); break;
+        case 5: gestureJuggle(); break;
+      }
+    }
+    else {
+      Serial << "Unknown gesture: " << lightGesture << endl;
+      ledA.fill_solid(CRGB::White);
+    }
 
 	// MGD: if you're not copying the animation to the other faces... where
 	// do we animate the other faces?  
-    //ledC = ledB = ledA;  // Copy animation to each face
+    ledC = ledB = ledA;  // Copy animation to each face
     FastLED.show();
   }
+
+  gestureChanged = false;
 }
 
 // MGD: see FastLED/colorutils.h for the methods you can use.  I don't think
 // all are implemented; see FastLED/pixelset.h for that.  
 
 void gestureCenterWhite() {
-   ledA.fill_solid(CRGB::Black); centerA.fill_solid(CRGB::Green);
+  //Serial << "CenterWhite" << endl;
+   ledA.fill_solid(CRGB::Black); centerA.fill_solid(CRGB::White);
    //ledB.fill_solid(CRGB::Black); centerB.fill_solid(CRGB::White);
    //ledC.fill_solid(CRGB::Black); centerC.fill_solid(CRGB::White);
 }
@@ -191,6 +224,11 @@ void gestureJuggle() {
   }
 }
 
+void forceAllBlack() {
+    ledA.fill_solid(CRGB::Black);
+    ledB.fill_solid(CRGB::Black);
+    ledC.fill_solid(CRGB::Black);
+}
 
 // processes messages that arrive
 void processMessages(String topic, String message) {
@@ -199,8 +237,12 @@ void processMessages(String topic, String message) {
 
   if ( topic.endsWith("igniter") ) {
     // what action?  on/off?
-    boolean setting = message.equals(Comms.messageBinary[1]) ? ON : OFF;
-    digitalWrite(IGNITER_PIN, setting);
+    ignitorActive = message.equals(Comms.messageBinary[1]) ? ON : OFF;
+    forceAllBlack();
+    FastLED.show();
+    delay(5);
+
+    digitalWrite(IGNITER_PIN, ignitorActive);
   } else if ( topic.endsWith("fire") ) {
     // what action?  on/off?
     boolean setting = message.equals(Comms.messageBinary[1]) ? ON : OFF;
@@ -208,6 +250,7 @@ void processMessages(String topic, String message) {
   } else if ( topic.endsWith("light") ) {
     // LED lights; save it
     lightGesture = message;
+    gestureChanged = true;
     // as a stupid example
   }
 }
