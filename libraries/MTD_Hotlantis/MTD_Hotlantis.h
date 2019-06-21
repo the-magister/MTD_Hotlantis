@@ -19,7 +19,7 @@ public:
 	int loop(boolean publishSerialCommands=true);
 	
 	// publishing sugar
-	void pub(String topic, String payload, bool retain=true);
+	void pub(String topic, String payload, bool retain=false);
 	
 	// subscribing sugar.  
 	bool sub(String topic);
