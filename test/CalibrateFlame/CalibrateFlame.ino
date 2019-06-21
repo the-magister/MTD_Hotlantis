@@ -4,21 +4,8 @@
 // Tools->CPU Frequency : "160 MHz"
 // Tools->Upload Speed : "921600"
 
-/* for a nice demo:
- *  find a level that's reliably 'just on"
- *  gwf/a/beacon/A/fire=350
- *  gwf/a/beacon/ramptime=5000
- *  gwf/a/beacon/rampmode=3 
- *  gwf/a/beacon/ramploop=2
- *  gwf/a/beacon/A/fire=1023
- */
-
 #include <Streaming.h>
 #include <Metro.h>
-#include <Bounce2.h>
-#include <ESPHelper.h>
-#include <ESPHelperFS.h>
-#include <MTD_Hotlantis.h>
 #include <Ramp.h>
 
 // Assumptions:
@@ -29,22 +16,6 @@
 //    SD8202G004V: 35 psi max, 1/4" NPT, 0.50 Cv
 //    We control these by a MOSFET and PWM.
 #define PROP_A_PIN D5
-#define PROP_B_PIN D6
-#define PROP_C_PIN D7
-// 50 works
-//#define PROP_FREQ 50 // Hz; ASCO recommends 300 Hz for Air/Gas
-// 10 lets you go low, but "chugs"
-//#define PROP_FREQ 10 // Hz; ASCO recommends 300 Hz for Air/Gas
-// 100 is nice,  floor is ~500.
-//#define PROP_FREQ 100 // Hz; ASCO recommends 300 Hz for Air/Gas
-// 60 gets down to ~350 floor.
-// #define PROP_FREQ 60 // Hz; ASCO recommends 300 Hz for Air/Gas
-
-// 3. have button to send igniter signal
-#define IGNITER_PIN D1 // wire to GND
-#define IGNITER_ON LOW
-#define IGNITER_OFF HIGH
-Bounce igniterButton = Bounce();
 
 // also used
 // D4, GPIO2, BUILTIN_LED
@@ -84,65 +55,46 @@ void setRampLoop(int val) {
 
 void rampValves() {
   analogWrite(PROP_A_PIN, valveRamp[0].update());
-  analogWrite(PROP_B_PIN, valveRamp[1].update());
-  analogWrite(PROP_C_PIN, valveRamp[2].update());
 }
 
 void setup() {
   // set them off, then enable pin.
   analogWrite(PROP_A_PIN, 0); pinMode(PROP_A_PIN, OUTPUT);
-  analogWrite(PROP_B_PIN, 0); pinMode(PROP_B_PIN, OUTPUT);
-  analogWrite(PROP_C_PIN, 0); pinMode(PROP_C_PIN, OUTPUT);
   valveRamp[0].go(0, 0, NONE, ONCEFORWARD);
-  valveRamp[1].go(0, 0, NONE, ONCEFORWARD);
-  valveRamp[2].go(0, 0, NONE, ONCEFORWARD);
  
   // wait a tic
   delay(250);
-
-  // enable pin.
-  igniterButton.attach(IGNITER_PIN, INPUT_PULLUP);
-  igniterButton.interval(5); // interval in ms
 
   // for local output
   Serial.begin(115200);
   Serial << endl << endl << endl << "Startup: begin." << endl;
 
-  // configure comms
-  Comms.begin("Flame", processMessages);
-
-  // set QoS=1. 
-  // we handle flame effects, so it's important that those commands get received with high fidelity.
-  // wouldn't like to drop a "flame=off" message, for example.
-  Comms.setMQTTQOS(1);
-
-  // sub
-  for( byte i=0; i<8; i++ ) Comms.sub( Comms.actBeaconFlame[i] );
-
   // configure proportional valves
   setPwmFreq(300); //Hz
   setPwmRange(1023); // 0..1023
   setRampTime(5000UL); // ms
-  setRampMode(EXPONENTIAL_OUT); // see Ramp.h for options
-  setRampLoop(ONCEFORWARD); // ibid
+  setRampMode(LINEAR); // see Ramp.h for options
+  setRampLoop(FORTHANDBACK); // ibid
   
   Serial << F("Startup complete.") << endl;
 }
 
 void loop() {
-  // comms handling
-  Comms.loop();
-
-  // update button
-  if ( igniterButton.update() ) {
-    // publish new reading.
-    Comms.pub(Comms.actBeaconIgniter[0], Comms.messageBinary[igniterButton.read() == IGNITER_ON]);
-    Comms.pub(Comms.actBeaconIgniter[1], Comms.messageBinary[igniterButton.read() == IGNITER_ON]);
-    Comms.pub(Comms.actBeaconIgniter[2], Comms.messageBinary[igniterButton.read() == IGNITER_ON]);
-  }
-
   // flame handling
   rampValves();
+
+  if( Serial.available()>0 ) {
+    delay(5);
+    char c = Serial.read();
+    int val = Serial.parseInt();
+    switch(c) {
+      case 'l': setRampLoop(val); break;
+      case 'm': setRampMode(val); break;
+      case 't': setRampTime(val); break;
+    }
+    valveRamp[0].go(0);
+    valveRamp[0].go(1023, rampTime, rampMode, rampLoop);  
+  }
 }
 
 // processes messages that arrive
@@ -152,8 +104,6 @@ void processMessages(String topic, String message) {
 
   // do it
   if ( topic.indexOf("/A/") != -1 ) valveRamp[0].go(val, rampTime, rampMode, rampLoop);
-  if ( topic.indexOf("/B/") != -1 ) valveRamp[1].go(val, rampTime, rampMode, rampLoop);
-  if ( topic.indexOf("/C/") != -1 ) valveRamp[2].go(val, rampTime, rampMode, rampLoop);
 
   if ( topic.indexOf("pwmrange") != -1 ) setPwmRange(val); 
   if ( topic.indexOf("pwmfreq") != -1 ) setPwmFreq(val); 

@@ -125,7 +125,7 @@ bool MTD_ESPHelper::sub(String topic) {
 
 	Serial << this->myName << ". subscribing:" << topic << endl;
 
-	return( ESPHelper::addSubscription(this->subTopics[nSubTopic++].c_str()));
+	return( ESPHelper::addSubscription(this->subTopics[nSubTopic++].c_str()) );
 }
 
 const char* FSfile = "/mtd.json";

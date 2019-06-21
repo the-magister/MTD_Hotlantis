@@ -93,6 +93,8 @@ void setup() {
 
   // configure comms
   Comms.begin(myName, processMessages); 
+
+  // subs  
   Comms.sub(myName + "/#"); // all my messages
 
   Serial << F("Startup complete.") << endl;

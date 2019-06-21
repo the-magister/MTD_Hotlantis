@@ -42,14 +42,17 @@ public:
 	// Motion sensors under the MTD arches
 	const String senseMTDMotion[3] = { 
 		"gwf/s/mtd/A/motion", "gwf/s/mtd/B/motion", "gwf/s/mtd/C/motion" 
-	}; // 0,1
+	}; // 0,1o
 	// Lighting controllers
 	const String actMTDLight[3] = { 
 		"gwf/a/mtd/A/light", "gwf/a/mtd/B/light", "gwf/a/mtd/C/light"
 	}; // String?
 	// Fog machine
-	const String actMTDFog[1] = { 
-		"gwf/a/mtd/fog"
+	const String actMTDFogBubbleEtc[5] = { 
+		"gwf/a/mtd/fog",
+		"gwf/a/mtd/bubble",
+		// these might get hooked up to 110VAC devices.
+		"gwf/a/mtd/chan2","gwf/a/mtd/chan3","gwf/a/mtd/chan4"
 	}; // 0,1
 
 	// Buttons on the water cannon
@@ -82,12 +85,12 @@ public:
 		"gwf/a/beacon/C/fire", 
 		// set the granularity of the ADC.  1023 default.
 		"gwf/a/beacon/pwmrange", 
-		// set the frequency for solenoid operation. 60 Hz default.
+		// set the frequency for solenoid operation. 300 Hz default.
 		"gwf/a/beacon/pwmfreq", 
 		// ramps are used to smooth transitions.  See Ramp.h for options.
 		// set the time it takes to change between /fire values; 5000ms default
 		"gwf/a/beacon/ramptime",
-		// set the interpolation mode for ramp; LINEAR default. may want QUADRATIC_OUT, CUBIC_OUT to get more flow at the lower end of the pwmrange
+		// set the interpolation mode for ramp; EXPONENTIAL_OUT default. may want QUADRATIC_OUT, CUBIC_OUT to get more flow at the lower end of the pwmrange
 		"gwf/a/beacon/rampmode",
 		// set the loop for ramp; ONCEFORWARD default. may want FORTHANDBACK for cycling between the last two values.
 		"gwf/a/beacon/ramploop"

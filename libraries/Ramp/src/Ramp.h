@@ -16,27 +16,27 @@
 
 enum ramp_mode {
     NONE                = 0x00,
-    LINEAR              = 0x01,
+    LINEAR              = 0x01, // 1 ~3.23/10 sec
     QUADRATIC_IN        = 0x02,
-    QUADRATIC_OUT       = 0x03,
+    QUADRATIC_OUT       = 0x03, // 3 ~5/10 sec
     QUADRATIC_INOUT     = 0x04,
     CUBIC_IN            = 0x05,
-    CUBIC_OUT           = 0x06,
+    CUBIC_OUT           = 0x06, // 6 ~6.91/10 sec
     CUBIC_INOUT         = 0x07,
     QUARTIC_IN          = 0x08,
-    QUARTIC_OUT         = 0x09,
+    QUARTIC_OUT         = 0x09, // 9 ~7.50/10 sec
     QUARTIC_INOUT       = 0x0A,
     QUINTIC_IN          = 0x0B,
-    QUINTIC_OUT         = 0x0C,
+    QUINTIC_OUT         = 0x0C, // 12 ~8.03/10 sec
     QUINTIC_INOUT       = 0x0D,
     SINUSOIDAL_IN       = 0x0E,
-    SINUSOIDAL_OUT      = 0x0F,
+    SINUSOIDAL_OUT      = 0x0F, // 15 ~5.14/10 sec
     SINUSOIDAL_INOUT    = 0x10,
     EXPONENTIAL_IN      = 0x11,
-    EXPONENTIAL_OUT     = 0x12,
+    EXPONENTIAL_OUT     = 0x12, // 18 ~8.17/10 sec
     EXPONENTIAL_INOUT   = 0x13,
     CIRCULAR_IN         = 0x14,
-    CIRCULAR_OUT        = 0x15,
+    CIRCULAR_OUT        = 0x15, // 21 ~7.39/10 sec
     CIRCULAR_INOUT      = 0x16,
     ELASTIC_IN          = 0x17,
     ELASTIC_OUT         = 0x18,
