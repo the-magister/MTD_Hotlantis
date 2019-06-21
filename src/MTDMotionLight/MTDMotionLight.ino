@@ -22,8 +22,10 @@ const boolean onReading = true;
 // devices with the light shield block access to D5-D8
 #define PIN_MOTION D1 // wire D3/GPIO0 to PIR; +3.3 with trigger; GND no trigger.
 Bounce motion = Bounce();
+
+// TODO: These seem to be reversed on the hardware
 // L POT is retrigger time.  CW slow.  CCW fast. set "fastest"
-// R POT is sensitvity.  CW least.  CCW most.  set "mostest"
+// R POT is sensitvity.  CW least.  CCW most.  set "mostest".
 
 // topics
 String motionTopic;

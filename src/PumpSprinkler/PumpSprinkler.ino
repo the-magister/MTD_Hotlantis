@@ -13,10 +13,11 @@
 
 // wire it up
 // avoid D3 and D4: pulled up.
-byte solenoidPin[4] = {D5, D6, D7, D8};
-byte pumpPin[2] = {D1, D2};
-#define ON HIGH
-#define OFF LOW
+// avoid D8 it prevents programming and console
+byte solenoidPin[4] = {D1, D2, D7, D8};  // D8 is ss, doesn't work?
+byte pumpPin[2] = {D5, D6};
+#define ON LOW
+#define OFF HIGH
 // also used
 // D4, GPIO2, BUILTIN_LED
 
@@ -49,7 +50,16 @@ void setup() {
   // configure comms
   Comms.begin(myRole, processMessages);
   Comms.sub(myRole + "/#"); // all my messages
- 
+
+  boolean state = ON;
+  
+  digitalWrite(solenoidPin[0], state);
+  digitalWrite(solenoidPin[1], state);
+  digitalWrite(solenoidPin[2], state);
+  digitalWrite(solenoidPin[3], state);
+  digitalWrite(pumpPin[0], state);
+  digitalWrite(pumpPin[1], state);
+  
   Serial << F("Startup complete.") << endl;
 }
 
@@ -62,15 +72,17 @@ void loop() {
 void processMessages(String topic, String message) {
   // pump manipulation.  KISS.
 
+  Serial << "Topic: " << topic << " msg: " << message << endl;
+  Serial << "binary: 1: " << Comms.messageBinary[0] << " 1: " << Comms.messageBinary[1] << endl;
   byte pin;
-  if( topic.indexOf("spray") != -1 ) {
+  if( topic.indexOf("sprayers") != -1 ) {
     if ( topic.endsWith("A") ) pin = solenoidPin[0]; 
     else if ( topic.endsWith("B") ) pin = solenoidPin[1];
     else if ( topic.endsWith("C") ) pin = solenoidPin[2];
     else if ( topic.endsWith("D") ) pin = solenoidPin[3];
     else return;
     
-  } else if ( topic.indexOf("pump") != -1 ) {
+  } else if ( topic.indexOf("pumps") != -1 ) {
     if ( topic.endsWith("A") ) pin = pumpPin[0]; 
     else if ( topic.endsWith("B") ) pin = pumpPin[1];
     else return;    

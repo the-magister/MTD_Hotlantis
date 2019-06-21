@@ -19,6 +19,10 @@ void gameplayEnter(), gameplay(); State Gameplay = State(gameplayEnter, gameplay
 void customAnimationEnter(), customAnimation(); State CustomAnimation = State(customAnimationEnter, customAnimation, NULL);
 void winEnter(), win(); State Win = State(winEnter, win, NULL);
 
+#define A 0
+#define B 1
+#define C 2
+
 // Debuging
 #define SILENCE false
 
@@ -47,6 +51,7 @@ struct CheatCode_t {
 
 #define NUM_CHEATS 32
 CheatCode_t cheats[NUM_CHEATS];
+int activeCheats;
 
 // Sounds
 #define LONELY_START 100
@@ -71,6 +76,17 @@ CheatCode_t cheats[NUM_CHEATS];
 #define NEG_CHANGE_NUM 22
 #define GUNFIRE_NUM 11
 #define PALETTE_NUM 0
+
+// Buttons for faker
+// wire it up
+const boolean onReading = false;
+// devices with the light shield block access to D5-D8
+#define PIN_BUTTON_A D1 // wire D3/GPIO0 through a N.O. switch to GND
+#define PIN_BUTTON_B D2 // wire D3/GPIO0 through a N.O. switch to GND
+#define PIN_BUTTON_C D3 // wire D3/GPIO0 through a N.O. switch to GND
+Bounce buttonA = Bounce();
+Bounce buttonB = Bounce();
+Bounce buttonC = Bounce();
 
 /*
    Collect all the "sense" topics, decide, then publish "act" topics.
@@ -99,6 +115,7 @@ SensorData_t sensorData;
 struct ActuatorState_t {
   // fog outputs
   boolean fogMTD; // on,off
+  boolean bubbleMTD;
 
   // water outputs
   boolean primePump[2]; // on,off
@@ -108,7 +125,7 @@ struct ActuatorState_t {
 
   // fire outputs
   boolean beaconIgniter[3]; // on,off
-  byte beaconFlame[3]; // 0=off, 255=maximal
+  int beaconFlame[3]; // 0=off, 255=maximal
   // MGD: incorrect.  Max is PWMRANGE.  See Flame.ino.  You can also set the bit depth.
 
   // light outputs
@@ -154,6 +171,14 @@ void setup() {
   Comms.sub("gwf/s/#"); // every sense topic
 
   initCheatCodes();
+
+  // Setup fake buttons for testing
+  buttonA.attach(PIN_BUTTON_A, INPUT_PULLUP);
+  buttonA.interval(5); // interval in ms
+  buttonB.attach(PIN_BUTTON_B, INPUT_PULLUP);
+  buttonB.interval(5); // interval in ms
+  buttonC.attach(PIN_BUTTON_C, INPUT_PULLUP);
+  buttonC.interval(5); // interval in ms
   
   Serial << F("Startup complete.") << endl;
 }
@@ -213,10 +238,27 @@ void loop() {
       sensorData.haveChanged = true;
     }    
   }
+
+  buttonFaker();
   
   stateMachine.update();
 }
 
+void buttonFaker() {
+    // update buttons
+  if ( buttonA.update() ) {
+    // publish new reading.
+    Comms.pub(Comms.senseMTDButton[0], Comms.messageBinary[buttonA.read() == onReading]);
+  }
+  if ( buttonB.update() ) {
+    // publish new reading.
+    Comms.pub(Comms.senseMTDButton[1], Comms.messageBinary[buttonB.read() == onReading]);
+  }
+  if ( buttonC.update() ) {
+    // publish new reading.
+    Comms.pub(Comms.senseMTDButton[2], Comms.messageBinary[buttonC.read() == onReading]);
+  }
+}
 void setColorPalette(byte timeDayOfWeek) {
   String pal;
   switch ( timeDayOfWeek ) {
@@ -234,9 +276,11 @@ void setColorPalette(byte timeDayOfWeek) {
 // Initialize the cheat codes
 void initCheatCodes() {
   int idx = 0;
-  //setCheat(idx++,"bbbbbbb",0); // Test
-  setCheat(idx++,"aaabbcb",0); // Alan
-  setCheat(idx++,"aabaaca",1);  // Mike
+  setCheat(idx++,"aaabbbc",0); // Test
+  //setCheat(idx++,"aaabbcb",0); // Alan
+  //setCheat(idx++,"aabaaca",1);  // Mike
+
+  activeCheats = idx;
 }
 
 void setCheat(int idx, char * code, int track) {
@@ -262,9 +306,9 @@ int checkCheats() {
   }
 
   Serial << "Current cheat hash: " << hash << endl;
-  for(int i=0; i < NUM_CHEATS; i++) {
+  for(int i=0; i < activeCheats; i++) {
     if (cheats[i].hash == hash) {
-      Serial << " Got cheat code: " << cheats[i].code;
+      Serial << "*** Got cheat code: " << cheats[i].code << endl;
       return cheats[i].track;  
     }
   }
@@ -292,10 +336,11 @@ void mapSensorsToActions() {
     // Water
     byte countSprayers = 
       ( sensorData.buttonCannon[0] || sensorData.buttonCannon[1] ) +
-      // are motion sensors and buttons the same?  
-      ( sensorData.motionMTD[0] || sensorData.buttonMTD[0] ) +
-      ( sensorData.motionMTD[1] || sensorData.buttonMTD[1] ) +
-      ( sensorData.motionMTD[2] || sensorData.buttonMTD[2] );
+      ( sensorData.buttonMTD[0] ) +
+      ( sensorData.buttonMTD[1] ) +
+      ( sensorData.buttonMTD[2] );
+
+   countSprayers = 4; // Hardcode
 
     // daily rotation of pump that is most heavily loaded
     byte mainPump = constrain(sensorData.timeDayOfWeek % 2, 0, 1); // never index into an array without constrain()
@@ -309,9 +354,9 @@ void mapSensorsToActions() {
     
     // adjust the sprayers
     actState.cannonSpray = sensorData.buttonCannon[0] || sensorData.buttonCannon[1];
-    actState.beaconSpray[0] = sensorData.motionMTD[0] || sensorData.buttonMTD[0];
-    actState.beaconSpray[1] = sensorData.motionMTD[1] || sensorData.buttonMTD[1];
-    actState.beaconSpray[2] = sensorData.motionMTD[2] || sensorData.buttonMTD[2];
+    actState.beaconSpray[0] = sensorData.buttonMTD[0];
+    actState.beaconSpray[1] = sensorData.buttonMTD[1];
+    actState.beaconSpray[2] = sensorData.buttonMTD[2];
 
     // Sound
 //    if ( sensorData.buttonCannon[0] || sensorData.buttonCannon[1] ) actState.sound = "cannonOn";
@@ -392,8 +437,9 @@ void publishActions() {
   // save, so we're only publishing the delta
   static ActuatorState_t lastState;
 
-  // fog outputs
-  if ( lastState.fogMTD != actState.fogMTD ) publishBinary(Comms.actMTDFog[0], actState.fogMTD);
+  // fog/bubble outputs
+  if ( lastState.fogMTD != actState.fogMTD ) publishBinary(Comms.actMTDFogBubbleEtc[0], actState.fogMTD);
+  if ( lastState.bubbleMTD != actState.bubbleMTD ) publishBinary(Comms.actMTDFogBubbleEtc[1], actState.bubbleMTD);
 
   // sound outputs
   if ( lastState.soundAction != actState.soundAction || lastState.soundTrack != actState.soundTrack ) {
@@ -468,8 +514,16 @@ void idleEnter() {
   actState.beaconSpray[0] = false;
   actState.beaconSpray[1] = false;
   actState.beaconSpray[2] = false;
+  actState.beaconIgniter[A] = false;
+  actState.beaconFlame[A] = 0;
+  actState.beaconIgniter[B] = false;
+  actState.beaconFlame[B] = 0;
+  actState.beaconIgniter[C] = false;
+  actState.beaconFlame[C] = 0;
   actState.soundAction = "";
   actState.soundTrack = "";
+  sensorData.haveChanged = true;
+  
   numInteractions = 0;
   buttonQueue.clear();
 }
@@ -495,12 +549,53 @@ void gameplay() {
   
 }
 
+static Metro flameTimer[3] = {Metro(infinite), Metro(infinite), Metro(infinite)}; 
+static Metro ignitorTimer[3] = {Metro(infinite), Metro(infinite), Metro(infinite)}; 
+
+
 void customAnimationEnter() {
   Serial << " Custom Animation Started" << endl;
   customAnimationTimer.reset();
+
+  // Shoot some flame.  TODO: Account for time of day here or elsewhere?
+  actState.beaconIgniter[A] = true;
+  actState.beaconFlame[A] = 512;
+  ignitorTimer[A].interval(3UL * 1000UL);
+  ignitorTimer[A].reset();
+  flameTimer[A].interval(10UL * 1000UL);
+  flameTimer[A].reset();
+  sensorData.haveChanged = true;
+}
+
+
+// Make sure we have flame ignition
+boolean flameIgnited[] = {false,false,false};  // Do we think the flame is ignited
+
+void insureIgnition(int beacon) {
+  if (flameIgnited[beacon]) {
+    return;    
+  } else {
+    actState.beaconIgniter[beacon] = true;
+    actState.beaconFlame[beacon] = 375;
+    ignitorTimer[beacon].interval(3UL * 1000UL);
+    ignitorTimer[beacon].reset();
+    flameIgnited[beacon] = true;
+    sensorData.haveChanged = true;    
+  }
 }
 
 void customAnimation() {
+  // Turn off ignitor and flame
+  for(int i=0; i < 3; i++) {
+    if (flameTimer[i].check()) {
+      actState.beaconFlame[i] = 0;
+      sensorData.haveChanged = true;
+    }
+    if (ignitorTimer[i].check()) {
+      actState.beaconIgniter[i] = false;
+      sensorData.haveChanged = true;
+    }
+  }
 }
 
 void winEnter() {
