@@ -63,6 +63,9 @@ CRGBSet rightC = ledC(LEDS_LEFT_COL + LEDS_CENTER_COL, LEDS_LEFT_COL + LEDS_CENT
 String lightGesture = "centerWhite";
 boolean gestureChanged = false;
 
+// track we we're doing with the ignitor
+boolean ignitorActive = false;
+
 void setup() {
   // set them off, then enable pin.
   digitalWrite(IGNITER_PIN, OFF);
@@ -102,6 +105,10 @@ void loop() {
   // comms handling
   Comms.loop();
 
+  if (ignitorActive) {
+    return;
+  }
+  
   // are we bored yet?
   if ( (millis() - lastTrafficTime) > (20UL * 1000UL) ) {
     lightGesture = "BPM";
@@ -215,6 +222,11 @@ void gestureJuggle() {
   }
 }
 
+void forceAllBlack() {
+    ledA.fill_solid(CRGB::Black);
+    ledB.fill_solid(CRGB::Black);
+    ledC.fill_solid(CRGB::Black);
+}
 
 // processes messages that arrive
 void processMessages(String topic, String message) {
@@ -223,8 +235,12 @@ void processMessages(String topic, String message) {
 
   if ( topic.endsWith("igniter") ) {
     // what action?  on/off?
-    boolean setting = message.equals(Comms.messageBinary[1]) ? ON : OFF;
-    digitalWrite(IGNITER_PIN, setting);
+    ignitorActive = message.equals(Comms.messageBinary[1]) ? ON : OFF;
+    forceAllBlack();
+    FastLED.show();
+    delay(5);
+
+    digitalWrite(IGNITER_PIN, ignitorActive);
   } else if ( topic.endsWith("fire") ) {
     // what action?  on/off?
     boolean setting = message.equals(Comms.messageBinary[1]) ? ON : OFF;
