@@ -26,6 +26,7 @@ void winEnter(), win(); State Win = State(winEnter, win, NULL);
 // Debuging
 #define SILENCE false
 #define FORCE_DAYTIME false
+#define FORCE_NIGHTIME true
 
 // Gameplay
 #define INTERACTIONS_TO_WIN 30
@@ -36,7 +37,7 @@ static Metro winTimer(30UL * 1000UL);
 static Metro customAnimationTimer(30UL * 1000UL);
 int numInteractions;  // The number of player interactions since gameplay start
 CircularBuffer<byte,7> buttonQueue;
-static int infinite = 60*60*60UL;
+static int infinite = 60*60*1000UL;
 static int buttonFlash = 1UL * 500UL;
 static Metro buttonMTDTimer[3] = {Metro(infinite), Metro(infinite), Metro(infinite)}; 
 static int winLockout = 2 * 60UL * 1000UL;
@@ -331,7 +332,7 @@ void mapSensorsToActions() {
 
   // Daytime: water, sound
   // Nightime: flame, light, fog, sound
-  if( FORCE_DAYTIME || (sensorData.timeHour >= 5 && sensorData.timeHour < (8+12)) ) {
+  if( FORCE_DAYTIME || (!FORCE_NIGHTIME && sensorData.timeHour >= 5 && sensorData.timeHour < (8+12)) ) {
     // Daytime
 
     // Water
@@ -341,7 +342,7 @@ void mapSensorsToActions() {
       ( sensorData.buttonMTD[1] ) +
       ( sensorData.buttonMTD[2] );
 
-   countSprayers = 4; // Hardcode
+    countSprayers = 4; // Hardcode
 
     // daily rotation of pump that is most heavily loaded
     byte mainPump = constrain(sensorData.timeDayOfWeek % 2, 0, 1); // never index into an array without constrain()
@@ -359,6 +360,14 @@ void mapSensorsToActions() {
     actState.beaconSpray[1] = sensorData.buttonMTD[1];
     actState.beaconSpray[2] = sensorData.buttonMTD[2];
 
+    // Light.  Turn it all off to save power
+    actState.lightBeacon[A] = "off";
+    actState.lightBeacon[B] = "off";
+    actState.lightBeacon[C] = "off";
+    actState.lightMTD[A] = "off";
+    actState.lightMTD[B] = "off";
+    actState.lightMTD[C] = "off";
+
     // Sound
 //    if ( sensorData.buttonCannon[0] || sensorData.buttonCannon[1] ) actState.sound = "cannonOn";
 //    else actState.sound = "cannonOff";
@@ -368,6 +377,10 @@ void mapSensorsToActions() {
 
     // Light
 
+    actState.lightMTD[A] = "rainbow";
+    actState.lightMTD[B] = "rainbow";
+    actState.lightMTD[C] = "rainbow";
+    
     for(int i=0; i < 3; i++) {
       if (sensorData.buttonMTD[i]) {
         // Flash the light to 

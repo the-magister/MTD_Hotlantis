@@ -21,6 +21,8 @@ Bounce buttonA = Bounce();
 Bounce buttonB = Bounce();
 Bounce buttonC = Bounce();
 
+static int infinite = 60*60*1000UL;
+
 void setup() {
   // for local output
   Serial.begin(115200);
@@ -45,22 +47,58 @@ void setup() {
   Serial << "Startup: complete." << endl;
 }
 
+Metro resetTimer(infinite);
+boolean checkingReset = false;
+
 void loop() {
   // comms handling
   Comms.loop();
 
+  static boolean aval = !onReading;
+  static boolean bval = !onReading;
+  static boolean cval = !onReading;
+  boolean changed = false;
+  
   // update buttons
   if ( buttonA.update() ) {
+    aval = buttonA.read();
+    changed = true;
     // publish new reading.
-    Comms.pub(Comms.senseMTDButton[0], Comms.messageBinary[buttonA.read() == onReading]);
+    Comms.pub(Comms.senseMTDButton[0], Comms.messageBinary[aval == onReading]);
   }
   if ( buttonB.update() ) {
+    bval = buttonB.read();
+    changed = true;
     // publish new reading.
-    Comms.pub(Comms.senseMTDButton[1], Comms.messageBinary[buttonB.read() == onReading]);
+    Comms.pub(Comms.senseMTDButton[1], Comms.messageBinary[bval == onReading]);
   }
   if ( buttonC.update() ) {
+    cval = buttonC.read();
+    changed = true;
     // publish new reading.
-    Comms.pub(Comms.senseMTDButton[2], Comms.messageBinary[buttonC.read() == onReading]);
+    Comms.pub(Comms.senseMTDButton[2], Comms.messageBinary[cval == onReading]);
+  }
+
+  if (checkingReset) {
+    if (resetTimer.check()) {
+      Serial << "Rebooting system" << endl;
+      Comms.pub("gwf/cc/reboot", Comms.messageBinary[true]);
+    } 
+  }
+
+  if (changed) {
+    Serial << "a: " << (aval==onReading) << " b: " << (bval==onReading) << " c: " << (cval == onReading) << endl;
+    if (aval == onReading && bval == onReading && cval == onReading) {
+      if (!checkingReset) {
+        Serial << "Starting reset timer" << endl;
+        resetTimer.interval(5UL * 1000UL);
+        resetTimer.reset();
+        checkingReset = true;    
+      }
+    } else {
+      checkingReset = false;
+      resetTimer.interval(infinite);
+    }
   }
 }
 

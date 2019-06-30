@@ -9,13 +9,12 @@ netInfo fieldNet = {
   .pass = "safetythird"
 };
 netInfo homeNet = {
-  .mqttHost = "m2m.eclipse.org",     //can be blank if not using MQTT
-//  .mqttHost = "test.mosquitto.org",     //can be blank if not using MQTT
+  .mqttHost = "192.168.0.105",     //can be blank if not using MQTT
   .mqttUser = "",   //can be blank
   .mqttPass = "",   //can be blank
   .mqttPort = 1883, //default port for MQTT is 1883 - only change if needed.
-  .ssid = "Looney",
-  .pass = "TinyandTooney"
+  .ssid = "Agrestic2",
+  .pass = "2manytimes"
 };
 netInfo *knownNetworks[2] = { &fieldNet, &homeNet };
 
