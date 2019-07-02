@@ -36,7 +36,6 @@ String lightGesture = "rainbow";
 boolean gestureChanged = false;
 static int infinite = 60*60*60UL;
 
-
 // our internal storage, mapped to the hardware.
 // pay no attention to the man behind the curtain.
 #define COLOR_ORDER RGB
@@ -67,6 +66,14 @@ CRGBSet rightDown = rightBack(LEDS_BAR, LEDS_BAR + LEDS_DOWN - 1);
 // deck lights under rail
 CRGBSet leftDeck = leftFront(LEDS_BAR + LEDS_UP, LEDS_BAR + LEDS_UP + LEDS_DECK - 1);
 CRGBSet rightDeck = rightFront(LEDS_BAR + LEDS_UP, LEDS_BAR + LEDS_UP + LEDS_DECK - 1);
+
+// color defs
+// deck lighting
+CRGB deckColor = CRGB::FairyLight;
+
+// day of week pallette
+CRGBPalette16 dowPalette;
+
 
 void setup() {
   delay(250); // for reprogramming window
@@ -243,6 +250,7 @@ void gestureMotionHighlite() {
     }
   }
 }
+
 void gestureConfetti() {
   static byte hue = 0;
   // random colored speckles that blink in and fade smoothly
@@ -307,6 +315,7 @@ void gestureBPM() {
     rightFront[i] = ColorFromPalette(palette, hue + (i * 2), beat - hue + (i * 10));
   }
 }
+
 void gestureJuggle() {
   // eight colored dots, weaving in and out of sync with each other
   leftBack.fadeToBlackBy(20);
@@ -348,4 +357,12 @@ void gestureIdentity() {
   rightBack.fill_solid(CRGB::Green);
   leftFront.fill_solid(CRGB::Blue);
   rightFront.fill_solid(CRGB::White);  
+}
+
+// upstairs is always chill.  Need to be able to see the stairs.
+void updateDeck() {
+  leftDeck.fill_solid(deckColor);
+  leftDeck.fadeLightBy( 128 ); // dim it
+
+  rightDeck = leftDeck;
 }
