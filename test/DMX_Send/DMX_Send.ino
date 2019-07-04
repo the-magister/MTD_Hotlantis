@@ -24,6 +24,7 @@ DMXESPSerial dmx;
 #define RED MASTERB+1
 #define GRN MASTERB+2
 #define BLU MASTERB+3
+#define WHT MASTERB+4
 
 #define FOG_PIN D1
 
@@ -54,7 +55,7 @@ void loop() {
   }
   */
   Serial.println("Red. 1");
-  dmx.write(RED, 255); dmx.write(GRN, 0); dmx.write(BLU, 0); 
+  dmx.write(RED, 255); dmx.write(GRN, 0); dmx.write(BLU, 0);  dmx.write(WHT, 0); 
   dmx.write(RELAY1, 255); dmx.write(RELAY2, 0); dmx.write(RELAY3, 0); dmx.write(RELAY4, 0);
 //  digitalWrite(FOG_PIN,1);
   while(!cycleTime.check()) {
@@ -63,7 +64,7 @@ void loop() {
   }
 
   Serial.println("Grn. 2");
-  dmx.write(RED, 0); dmx.write(GRN, 255); dmx.write(BLU, 0); 
+  dmx.write(RED, 0); dmx.write(GRN, 255); dmx.write(BLU, 0);  dmx.write(WHT, 0); 
   dmx.write(RELAY1, 0); dmx.write(RELAY2, 255); dmx.write(RELAY3, 0); dmx.write(RELAY4, 0);
   digitalWrite(FOG_PIN,0);
   while(!cycleTime.check()) {
@@ -71,8 +72,8 @@ void loop() {
     yield();
   }
 
-  Serial.println("Blu. 4");
-  dmx.write(RED, 0); dmx.write(GRN, 0); dmx.write(BLU, 255); 
+  Serial.println("Blu. 3");
+  dmx.write(RED, 0); dmx.write(GRN, 0); dmx.write(BLU, 255);  dmx.write(WHT, 0); 
   dmx.write(RELAY1, 0); dmx.write(RELAY2, 0); dmx.write(RELAY3, 255); dmx.write(RELAY4, 0);
 //  digitalWrite(FOG_PIN,1);
   while(!cycleTime.check()) {
@@ -81,7 +82,16 @@ void loop() {
   }
 
   Serial.println("Blk. 4");
-  dmx.write(RED, 0); dmx.write(GRN, 0); dmx.write(BLU, 0); 
+  dmx.write(RED, 0); dmx.write(GRN, 0); dmx.write(BLU, 0); dmx.write(WHT, 0); 
+  dmx.write(RELAY1, 0); dmx.write(RELAY2, 0); dmx.write(RELAY3, 0); dmx.write(RELAY4, 255);
+  digitalWrite(FOG_PIN,0);
+  while(!cycleTime.check()) {
+    dmx.update();           // update the DMX bus
+    yield();
+  }
+
+  Serial.println("Wht. 5");
+  dmx.write(RED, 0); dmx.write(GRN, 0); dmx.write(BLU, 0); dmx.write(WHT, 255);
   dmx.write(RELAY1, 0); dmx.write(RELAY2, 0); dmx.write(RELAY3, 0); dmx.write(RELAY4, 255);
   digitalWrite(FOG_PIN,0);
   while(!cycleTime.check()) {
