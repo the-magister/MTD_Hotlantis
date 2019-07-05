@@ -118,7 +118,10 @@ public:
 		// I mean:
 		// "gwf/a/sound/Play", "gwf/a/sound/PlaySolo", etc.
 	}; // both messages are bytes
-	
+
+        const String senseSound[1] = {
+                "gwf/s/soundFinished"
+        }; //  track
 	
 	// You can send whatever you like, serialized as a string.
 	const String messageBinary[2] = { 

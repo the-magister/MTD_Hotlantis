@@ -53,13 +53,26 @@ void setup() {
   Serial << F("Startup complete.") << endl;
 }
 
+int waitForTrackEnd = -1;
+Metro trackEndWait(1500UL);
+
+void sendEndOfTrackMessage(int trackNum) {
+  Comms.pub(Comms.senseSound[0], String(trackNum));
+  waitForTrackEnd = -1;  
+}
+
 void loop() {
   // comms handling
   Comms.loop();
   
   // sound handling
   tsunami.update();
+
+  if (waitForTrackEnd != -1 && trackEndWait.check() && !tsunami.isTrackPlaying(waitForTrackEnd)) {
+    sendEndOfTrackMessage(waitForTrackEnd);
+  }
 }
+
 
 // processes messages that arrive
 void processMessages(String topic, String message) {
@@ -74,7 +87,7 @@ void processMessages(String topic, String message) {
   //
   // message.toInt() is assumed to be a valid track number
 
-  Serial << "Got message: " << topic;
+  Serial << "Got message: " << topic << endl;
   
   if( topic.indexOf("Play") != -1 ) {
     // play a track
@@ -91,16 +104,27 @@ void processMessages(String topic, String message) {
 
     // fire it up
     if( solo ) {
+      if (waitForTrackEnd != -1) {
+        sendEndOfTrackMessage(waitForTrackEnd);  
+      }
       // if you can, call Solo.  The Tsunami _will_ run out of polyphonic track slots, eventually.
       tsunami.stopAllTracks(); 
       tsunami.trackPlaySolo(trackNum, 0, true);
+      waitForTrackEnd = trackNum;
+      trackEndWait.reset();
     } else {
       tsunami.trackPlayPoly(trackNum, 0, true);   
     }
   } else if( topic.indexOf("Quiet") != -1 ) {
      tsunami.stopAllTracks(); 
+     if (waitForTrackEnd != -1) {
+        sendEndOfTrackMessage(waitForTrackEnd);  
+     }
   } else if (topic.indexOf("Stop") != -1) {
     int trackNum = message.toInt();
+    if (waitForTrackEnd == trackNum) {
+      sendEndOfTrackMessage(waitForTrackEnd);  
+    }
     tsunami.trackStop(trackNum);
   }
 }

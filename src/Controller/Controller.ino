@@ -16,7 +16,9 @@
 
 void idleEnter(), idle(), idle(); State Idle = State(idleEnter, idle, NULL);
 void gameplayEnter(), gameplay(); State Gameplay = State(gameplayEnter, gameplay, NULL);
-void customAnimationEnter(), customAnimation(); State CustomAnimation = State(customAnimationEnter, customAnimation, NULL);
+void customAnimationNightIgniteEnter(), customAnimationNightIgnite(); State CustomAnimationNightIgnite = State(customAnimationNightIgniteEnter, customAnimationNightIgnite, NULL);
+void customAnimationNightFlipEnter(), customAnimationNightFlip(); State CustomAnimationNightFlip = State(customAnimationNightFlipEnter, customAnimationNightFlip, NULL);
+void customAnimationNightFlopEnter(), customAnimationNightFlop(); State CustomAnimationNightFlop = State(customAnimationNightFlopEnter, customAnimationNightFlop, NULL);
 void winEnter(), win(); State Win = State(winEnter, win, NULL);
 
 #define A 0
@@ -28,19 +30,22 @@ void winEnter(), win(); State Win = State(winEnter, win, NULL);
 #define FORCE_DAYTIME false
 #define FORCE_NIGHTIME true
 
-// Gameplay
-#define INTERACTIONS_TO_WIN 30
+#define MIN_GAS 625 // Amount of gas before pilot would go out
+#define LIGHT_GAS 900 // Amount of gas to use when lighting
 
-FSM stateMachine = FSM(Idle); // initialize state machine
-static Metro inactiveTimer(15UL * 1000UL);
+// Gameplay times
+#define INTERACTIONS_TO_WIN 60  // Minimum number of interactions for a win
+static int winLockout = 2 * 60UL * 1000UL;  // Minimum time before a win
+static Metro inactiveTimer(60UL * 1000UL);  // Amount of time without interaction before leaving gameplay
+
+static int infinite = 60*60*1000UL;
 static Metro winTimer(30UL * 1000UL);
+FSM stateMachine = FSM(Idle); // initialize state machine
 static Metro customAnimationTimer(30UL * 1000UL);
 int numInteractions;  // The number of player interactions since gameplay start
 CircularBuffer<byte,7> buttonQueue;
-static int infinite = 60*60*1000UL;
 static int buttonFlash = 1UL * 500UL;
 static Metro buttonMTDTimer[3] = {Metro(infinite), Metro(infinite), Metro(infinite)}; 
-static int winLockout = 2 * 60UL * 1000UL;
 static Metro winLockoutTimer(infinite);
 
 //Cheat codes
@@ -57,16 +62,22 @@ int activeCheats;
 
 // Sounds
 #define LONELY_START 100
+#define DAY_START 150
 #define OHAI_START 200
+#define NIGHT_START 250
 #define GOODNUF_START 400
 #define GOODJOB_START 500
 #define WINNING_START 600
 #define FANFARE_START 300
 #define BEAT_START 700
+#define CHEATS_START 750
 #define POS_CHANGE_START 800
 #define NEG_CHANGE_START 900
 #define GUNFIRE_START 950
 
+#define DAY_NUM 15
+#define NIGHT_NUM 15
+#define LONELY_NUM 10
 #define LONELY_NUM 10
 #define OHAI_NUM 14
 #define FANFARE_NUM 69
@@ -111,6 +122,7 @@ struct SensorData_t {
   // cannon inputs
   boolean buttonCannon[2] = {false,false}; // L,R
 };
+
 SensorData_t sensorData;
 
 // Publish the "act" topics.
@@ -127,8 +139,7 @@ struct ActuatorState_t {
 
   // fire outputs
   boolean beaconIgniter[3]; // on,off
-  int beaconFlame[3]; // 0=off, 255=maximal
-  // MGD: incorrect.  Max is PWMRANGE.  See Flame.ino.  You can also set the bit depth.
+  int beaconFlame[3]; // 0=off, 1024=maximal
 
   // light outputs
   // these are far, far more complicated than "on" or "off".
@@ -145,8 +156,15 @@ struct ActuatorState_t {
 };
 ActuatorState_t actState;
 
-// also used
-// D4, GPIO2, BUILTIN_LED
+boolean daytime = false;
+int waitingForTrack = - 1;
+
+static Metro igniterTimer[3] = {Metro(infinite), Metro(infinite), Metro(infinite)}; 
+// Make sure we have flame ignition
+int ignitionSeqStage[] = {-1,-1,-1};  // What stage of the ignition sequence are we
+boolean flameIgnited[] = {false,false,false};  // Do we think the flame is ignited
+
+#define IGNITE_TIME 2UL * 1000UL
 
 String someVeryImportantThing;
 
@@ -181,6 +199,8 @@ void setup() {
   buttonB.interval(5); // interval in ms
   buttonC.attach(PIN_BUTTON_C, INPUT_PULLUP);
   buttonC.interval(5); // interval in ms
+
+  resetState();
   
   Serial << F("Startup complete.") << endl;
 }
@@ -227,23 +247,83 @@ void loop() {
       stateMachine.transitionTo(Idle);  
     }
   }
-  if ( customAnimationTimer.check() ) {
-    if (stateMachine.isInState(CustomAnimation)) {
-
-      stateMachine.transitionTo(Idle);  
-    }
-  }
 
   for(int i=0; i < 3; i++) {
     if (buttonMTDTimer[i].check()) {
       actState.lightBeacon[i] = "black";
       sensorData.haveChanged = true;
+      buttonMTDTimer[i].interval(infinite);
     }    
   }
 
   buttonFaker();
+
+  ignitionSeqHandler();
   
   stateMachine.update();
+}
+
+
+// Handle the ignition sequence logic
+// Mike suggested having . 3 states here.  
+// gas MAX, lights spastic for 5s-10s
+// lights off, igniter for 5s
+// igniter off, lights to rainbow
+// 
+void ignitionSeqHandler() {
+  for(int i=0; i < 1; i++) {
+//  for(int i=0; i < 3; i++) {
+    switch(ignitionSeqStage[i]) {
+      case -1:
+        break;
+      case 0:
+        Serial << "Ignition Seq0, beacon: " << i << endl;
+        // Start state, gas to max, lights spastic
+        actState.beaconIgniter[i] = false;
+        actState.beaconFlame[i] = 1023;
+        actState.lightBeacon[i] = "centerSinelonSideSinelon";
+        sensorData.haveChanged = true;    
+        igniterTimer[i].interval(5UL * 1000UL);  // 5-10s dependings on how big a boom we want
+        igniterTimer[i].reset();  
+        ignitionSeqStage[i] = 1;
+
+        break;
+      case 1:
+        if (!igniterTimer[i].check()) continue;
+
+        Serial << "Ignition Seq1, beacon: " << i << endl;
+
+        actState.beaconIgniter[i] = true;
+        actState.beaconFlame[i] = 1023;
+        actState.lightBeacon[i] = "black";
+        sensorData.haveChanged = true;
+
+        igniterTimer[i].interval(IGNITE_TIME);
+        igniterTimer[i].reset();  
+        ignitionSeqStage[i] = 2;
+
+        break;
+      case 2:
+        if (!igniterTimer[i].check()) continue;
+
+        Serial << "Ignition Seq2, beacon: " << i << endl;
+
+        actState.beaconFlame[i] = MIN_GAS;
+        actState.lightBeacon[i] = "rainbow";
+        actState.beaconIgniter[i] = false;
+
+        flameIgnited[i] = true;
+        ignitionSeqStage[i] = -1;
+        break;
+    }
+  }
+}
+
+void igniteBeacon(int beacon) {
+  if (flameIgnited[beacon] || ignitionSeqStage[beacon] != -1) return;
+  
+  Serial << "Ignite Beacon" << beacon << endl;
+  ignitionSeqStage[beacon] = 0;
 }
 
 void buttonFaker() {
@@ -262,6 +342,9 @@ void buttonFaker() {
   }
 }
 void setColorPalette(byte timeDayOfWeek) {
+  // We will need a separate command to set palette on device if we decide to use it, likely palette will be here
+  if (1==1) return;
+  
   String pal;
   switch ( timeDayOfWeek ) {
     case 0: pal = "CloudColors_p"; break;
@@ -278,9 +361,9 @@ void setColorPalette(byte timeDayOfWeek) {
 // Initialize the cheat codes
 void initCheatCodes() {
   int idx = 0;
-  setCheat(idx++,"aaabbbc",0); // Test
+  setCheat(idx++,"aaabbbc",4); // Test .  2 is beep beep
   //setCheat(idx++,"aaabbcb",0); // Alan
-  //setCheat(idx++,"aabaaca",1);  // Mike
+  setCheat(idx++,"aabaaca",4);  // Jess
 
   activeCheats = idx;
 }
@@ -307,7 +390,7 @@ int checkCheats() {
     hash += buttonQueue[i] * pow(3,i);  
   }
 
-  Serial << "Current cheat hash: " << hash << endl;
+  //Serial << "Current cheat hash: " << hash << endl;
   for(int i=0; i < activeCheats; i++) {
     if (cheats[i].hash == hash) {
       Serial << "*** Got cheat code: " << cheats[i].code << endl;
@@ -333,6 +416,7 @@ void mapSensorsToActions() {
   // Daytime: water, sound
   // Nightime: flame, light, fog, sound
   if( FORCE_DAYTIME || (!FORCE_NIGHTIME && sensorData.timeHour >= 5 && sensorData.timeHour < (8+12)) ) {
+    daytime = true;
     // Daytime
 
     // Water
@@ -341,8 +425,6 @@ void mapSensorsToActions() {
       ( sensorData.buttonMTD[0] ) +
       ( sensorData.buttonMTD[1] ) +
       ( sensorData.buttonMTD[2] );
-
-    countSprayers = 4; // Hardcode
 
     // daily rotation of pump that is most heavily loaded
     byte mainPump = constrain(sensorData.timeDayOfWeek % 2, 0, 1); // never index into an array without constrain()
@@ -361,9 +443,9 @@ void mapSensorsToActions() {
     actState.beaconSpray[2] = sensorData.buttonMTD[2];
 
     // Light.  Turn it all off to save power
-    actState.lightBeacon[A] = "off";
-    actState.lightBeacon[B] = "off";
-    actState.lightBeacon[C] = "off";
+    actState.lightBeacon[A] = "black";
+    actState.lightBeacon[B] = "black";
+    actState.lightBeacon[C] = "black";
     actState.lightMTD[A] = "off";
     actState.lightMTD[B] = "off";
     actState.lightMTD[C] = "off";
@@ -374,6 +456,7 @@ void mapSensorsToActions() {
 
   } else {
     // Nighttime
+    daytime = false;
 
     // Light
 
@@ -384,9 +467,12 @@ void mapSensorsToActions() {
     for(int i=0; i < 3; i++) {
       if (sensorData.buttonMTD[i]) {
         // Flash the light to 
-        actState.lightBeacon[i] = "centerWhite";
+        actState.lightBeacon[i] = "blue";
         buttonMTDTimer[i].interval(buttonFlash);
         buttonMTDTimer[i].reset();
+      }
+      if (sensorData.motionMTD[i]) {
+        igniteBeacon(i);
       }
     }
     
@@ -403,6 +489,7 @@ void mapSensorsToActions() {
      (sensorData.buttonMTD[0] || sensorData.buttonMTD[1] || sensorData.buttonMTD[2] ||
       sensorData.motionMTD[0] || sensorData.motionMTD[1] || sensorData.motionMTD[2] ||
       sensorData.buttonCannon[0] || sensorData.buttonCannon[1])) {
+
     stateMachine.transitionTo(Gameplay);  
   }
 
@@ -452,7 +539,9 @@ void publishActions() {
   static ActuatorState_t lastState;
 
   // fog/bubble outputs
-  if ( lastState.fogMTD != actState.fogMTD ) publishBinary(Comms.actMTDFogBubbleEtc[0], actState.fogMTD);
+  if ( lastState.fogMTD != actState.fogMTD ) {
+    publishBinary(Comms.actMTDFogBubbleEtc[0], actState.fogMTD);
+  }
   if ( lastState.bubbleMTD != actState.bubbleMTD ) publishBinary(Comms.actMTDFogBubbleEtc[1], actState.bubbleMTD);
 
   // sound outputs
@@ -516,9 +605,7 @@ void printSensorData() {
   Serial << endl;
 }
 
-void idleEnter() {
-  Serial << "Entered Idle" << endl;
-
+void resetState() {
   // Reset state
   actState.primePump[0] = false;
   actState.primePump[1] = false;
@@ -534,12 +621,31 @@ void idleEnter() {
   actState.beaconFlame[B] = 0;
   actState.beaconIgniter[C] = false;
   actState.beaconFlame[C] = 0;
-  actState.soundAction = "";
+  actState.soundAction = "Quiet";
   actState.soundTrack = "";
+  actState.fogMTD = false;
+  actState.bubbleMTD = false;
+  actState.lightBeacon[A] = "black";
+  actState.lightBeacon[B] = "black";
+  actState.lightBeacon[C] = "black";
+  
   sensorData.haveChanged = true;
+
+  flameIgnited[A] = false;
+  flameIgnited[B] = false;
+  flameIgnited[C] = false;
+  ignitionSeqStage[A] = -1;
+  ignitionSeqStage[B] = -1;
+  ignitionSeqStage[C] = -1;
   
   numInteractions = 0;
   buttonQueue.clear();
+}
+
+void idleEnter() {
+  Serial << "Entered Idle" << endl;
+
+  resetState();
 }
 
 void idle() {
@@ -553,70 +659,120 @@ void gameplayEnter() {
   winLockoutTimer.reset();
 
   // Play OHAI
-  playTrack("PlaySolo",chooseTrack(OHAI_START,OHAI_NUM));
+  int track = chooseTrack(OHAI_START,OHAI_NUM);
+  playTrack("PlaySolo",track);
+  waitingForTrack = track;
 
   sensorData.haveChanged = true;
 
 }
 
 void gameplay() {
-  
-}
-
-static Metro flameTimer[3] = {Metro(infinite), Metro(infinite), Metro(infinite)}; 
-static Metro ignitorTimer[3] = {Metro(infinite), Metro(infinite), Metro(infinite)}; 
-
-
-void customAnimationEnter() {
-  Serial << " Custom Animation Started" << endl;
-  customAnimationTimer.reset();
-
-  // Shoot some flame.  TODO: Account for time of day here or elsewhere?
-  actState.beaconIgniter[A] = true;
-  actState.beaconFlame[A] = 512;
-  ignitorTimer[A].interval(3UL * 1000UL);
-  ignitorTimer[A].reset();
-  flameTimer[A].interval(10UL * 1000UL);
-  flameTimer[A].reset();
-  sensorData.haveChanged = true;
-}
-
-
-// Make sure we have flame ignition
-boolean flameIgnited[] = {false,false,false};  // Do we think the flame is ignited
-
-void insureIgnition(int beacon) {
-  if (flameIgnited[beacon]) {
-    return;    
+  if (daytime) {
+    // Direct control over beacon water
   } else {
-    actState.beaconIgniter[beacon] = true;
-    actState.beaconFlame[beacon] = 375;
-    ignitorTimer[beacon].interval(3UL * 1000UL);
-    ignitorTimer[beacon].reset();
-    flameIgnited[beacon] = true;
-    sensorData.haveChanged = true;    
+    // Direct control over beacon fire
+  }  
+}
+
+void customAnimationNightIgniteEnter() {
+  Serial << "Enter customAnimationNight" << endl;
+  
+  // check that we have ignition on all three beacons, if not ignite
+  for(int i=0; i < 3; i++) {
+    if (!flameIgnited[i]) { 
+      igniteBeacon(i);
+    }
+  }
+
+  // Turn on FOG
+  actState.fogMTD = true;
+}
+
+void customAnimationNightIgnite() {
+  if (flameIgnited[A] && flameIgnited[B] && flameIgnited[C]) {
+    Serial << "Everything ignited, going to NightFlip" << endl;    
+    // All igniters ready to go, let's animate
+
+    stateMachine.transitionTo(CustomAnimationNightFlip);      
   }
 }
 
-void customAnimation() {
-  // Turn off ignitor and flame
-  for(int i=0; i < 3; i++) {
-    if (flameTimer[i].check()) {
-      actState.beaconFlame[i] = 0;
-      sensorData.haveChanged = true;
-    }
-    if (ignitorTimer[i].check()) {
-      actState.beaconIgniter[i] = false;
-      sensorData.haveChanged = true;
+Metro customAnimationFlipWait(15UL * 1000UL);
+
+// Flip/Flop logic to change states for animation
+void customAnimationNightFlipEnter() {
+  Serial << "Enter customAnimationNightFlip" << endl;
+  
+  actState.fogMTD = random(0,3) > 0;
+  actState.bubbleMTD = random(0,3) > 0;
+  actState.lightBeacon[A] = "blue";
+  actState.lightBeacon[B] = "blue";
+  actState.lightBeacon[C] = "blue";
+  actState.beaconFlame[A] = MIN_GAS; 
+  actState.beaconFlame[B] = MIN_GAS; 
+  actState.beaconFlame[C] = MIN_GAS; 
+  sensorData.haveChanged = true;      
+  customAnimationFlipWait.reset();
+}
+
+void customAnimationNightFlip() {
+  if (customAnimationFlipWait.check()) {
+    stateMachine.transitionTo(CustomAnimationNightFlop);      
+  }
+}
+
+void customAnimationNightFlopEnter() {
+  Serial << "Enter customAnimationNightFlop" << endl;
+  actState.fogMTD = random(0,3) > 0;
+  actState.bubbleMTD = random(0,3) > 0;
+  actState.lightBeacon[A] = "green";
+  actState.lightBeacon[B] = "green";
+  actState.lightBeacon[C] = "green";
+  actState.beaconFlame[A] = random(MIN_GAS,1023); 
+  actState.beaconFlame[B] = random(MIN_GAS,1023); 
+  actState.beaconFlame[C] = random(MIN_GAS,1023); 
+  sensorData.haveChanged = true;      
+  customAnimationFlipWait.reset();
+}
+
+void customAnimationNightFlop() {
+  if (customAnimationFlipWait.check()) {
+    stateMachine.transitionTo(CustomAnimationNightFlip);      
+  }
+}
+
+void handleSoundFinished(int track) {
+  Serial << "Handling sound finished: " << track << " waiting for: " << waitingForTrack << endl;
+
+  if (track != waitingForTrack) return;
+  
+  if (stateMachine.isInState(CustomAnimationNightFlip)) {
+    stateMachine.transitionTo(Idle);  
+  } else if (stateMachine.isInState(CustomAnimationNightFlop)) {
+    stateMachine.transitionTo(Idle);  
+  } else if (stateMachine.isInState(CustomAnimationNightIgnite)) {
+    stateMachine.transitionTo(Idle);  
+  } else if (stateMachine.isInState(Win)) {
+    stateMachine.transitionTo(Idle);
+  } else if (stateMachine.isInState(Gameplay)) {
+    if (daytime) {
+      playTrack("PlayLoop",chooseTrack(DAY_START,DAY_NUM));          
+    } else {
+      playTrack("PlayLoop",chooseTrack(NIGHT_START,NIGHT_NUM));          
     }
   }
+
+  waitingForTrack = -1;
 }
 
 void winEnter() {
     Serial << "Entered Win" << endl;
   
   // Play WIN
-  playTrack("PlaySolo",chooseTrack(FANFARE_START,FANFARE_NUM));
+  int track = chooseTrack(FANFARE_START,FANFARE_NUM); 
+  playTrack("PlaySolo",track);
+  waitingForTrack = track;
 
   sensorData.haveChanged = true;
   winTimer.reset();
@@ -634,7 +790,7 @@ void registerInteraction() {
     inactiveTimer.reset();    
     numInteractions++;
 
-    Serial << "NumInteractions: " << numInteractions << endl;
+    //Serial << "NumInteractions: " << numInteractions << endl;
     if (stateMachine.isInState(Gameplay) && numInteractions >= INTERACTIONS_TO_WIN && winLockoutTimer.check()) {
       stateMachine.transitionTo(Win);  
     }
@@ -663,26 +819,29 @@ void processSensors(String topic, String message) {
     if (sensorData.buttonMTD[index]) {
       registerInteraction();
       buttonQueue.push(index);
-      Serial << "buttonQueue size: " << buttonQueue.size() << endl;
+
       int ctrack = checkCheats();
       if (ctrack > -1) {
        if (stateMachine.isInState(Gameplay)) {
-          playTrack("PlaySolo",FANFARE_START + ctrack);
+          int track = CHEATS_START + ctrack;
+          playTrack("PlaySolo",track);
+          waitingForTrack = track;
 
           sensorData.haveChanged = true;
 
-          stateMachine.transitionTo(CustomAnimation);  
+          // TODO: Check time for correct state
+          stateMachine.transitionTo(CustomAnimationNightIgnite);  
         }     
       }
     }
-    Serial << "Got a button" << endl;
   } else if ( topic.indexOf("motion") != -1 && index != 99  ) {
     sensorData.motionMTD[index] = (boolean)message.toInt();
     if (sensorData.motionMTD[index]) registerInteraction();
   } else if ( topic.indexOf("cannon") != -1 && index != 99  ) {
-    Serial << "Handle cannon message.  " << message << endl;
     inactiveTimer.reset();  // Don't register interactions here, we want tower interactions for winning
     sensorData.buttonCannon[index] = Comms.convBinary(message[0]);
+  } else if (topic.indexOf("soundFinished") != -1) {
+    handleSoundFinished(message.toInt());
   } else {
     Serial << "I'm not sure why, but here we are. index=" << index << endl;
   }
