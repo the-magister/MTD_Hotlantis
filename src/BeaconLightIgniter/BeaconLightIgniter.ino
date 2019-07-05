@@ -340,7 +340,7 @@ void gestureCenterRainbowSideHue1() {
   hue += 5;
   // per-module step size through color wheel proportional to the 
   leftA.fill_solid(sideRgb);
-  centerA.fill_rainbow(hue, LEDS_LEFT_COL); 
+  centerA.fill_rainbow(hue, LEDS_LEFT_COL); // should be centerA.size() not the hardcode value
   rightA.fill_solid(sideRgb);
 }
 
@@ -357,7 +357,7 @@ void gestureCenterRainbowSideRand() {
   hue += 5;
   // per-module step size through color wheel proportional to the 
   leftA.fill_solid(sideRgb);
-  centerA.fill_rainbow(hue, LEDS_LEFT_COL); 
+  centerA.fill_rainbow(hue, LEDS_LEFT_COL); // should be centerA.size() not the hardcode value
   rightA.fill_solid(sideRgb);
 }
 
@@ -366,7 +366,7 @@ void gestureCenterRainbowSide(CRGB side) {
   hue += 5;
   // per-module step size through color wheel proportional to the 
   leftA.fill_solid(side);
-  centerA.fill_rainbow(hue, LEDS_LEFT_COL); 
+  centerA.fill_rainbow(hue, LEDS_LEFT_COL); // the second parameter should be the hue increment per pixel.  Odd choice.
   rightA.fill_solid(side);
 }
 
@@ -374,9 +374,9 @@ void gestureCenterRainbowSideRainbow() {
   static byte hue = 0;
   hue += 5;
   // per-module step size through color wheel proportional to the 
-  leftA.fill_rainbow(hue, LEDS_LEFT_COL); 
-  centerA.fill_rainbow(hue, LEDS_LEFT_COL); 
-  rightA.fill_rainbow(hue, LEDS_LEFT_COL); 
+  leftA.fill_rainbow(hue, LEDS_LEFT_COL); // the second parameter should be the hue increment per pixel.  Odd choice.
+  centerA.fill_rainbow(hue, LEDS_LEFT_COL); // the second parameter should be the hue increment per pixel.  Odd choice.
+  rightA.fill_rainbow(hue, LEDS_LEFT_COL); // the second parameter should be the hue increment per pixel.  Odd choice.
 }
 void gestureCenterRainbowSideRainbowOpp() {
   static byte hue = 0;
@@ -384,9 +384,11 @@ void gestureCenterRainbowSideRainbowOpp() {
   hue += 5;
   shue -= 5;
   // per-module step size through color wheel proportional to the 
-  leftA.fill_rainbow(shue, LEDS_LEFT_COL); 
-  centerA.fill_rainbow(hue, LEDS_LEFT_COL); 
-  rightA.fill_rainbow(shue, LEDS_LEFT_COL); 
+  leftA.fill_rainbow(shue, LEDS_LEFT_COL); // the second parameter should be the hue increment per pixel.  Odd choice.
+  centerA.fill_rainbow(hue, LEDS_LEFT_COL); // the second parameter should be the hue increment per pixel.  Odd choice.
+  rightA.fill_rainbow(shue, LEDS_LEFT_COL); // the second parameter should be the hue increment per pixel.  Odd choice.
+
+  // I think you want to increment the leftA and rightA by a larger number than centerA, so you end up spanning the same distance around the color wheel?
 }
 
 void gestureCenterSinelonSideSinelon() {

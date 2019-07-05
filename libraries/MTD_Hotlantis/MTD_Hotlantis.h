@@ -48,13 +48,14 @@ public:
 		"gwf/a/mtd/A/light", "gwf/a/mtd/B/light", "gwf/a/mtd/C/light"
 	}; // String?
 	// Fog machine
-	const String actMTDFogBubbleEtc[5] = { 
-		"gwf/a/mtd/fog",
-		"gwf/a/mtd/bubble",
+	const String actMTDFogBubbleEtc[9] = { 
+		"gwf/a/mtd/fog", // 0,1
+		"gwf/a/mtd/bubble", // 0,1
 		// these might get hooked up to 110VAC devices.
-		"gwf/a/mtd/chan2","gwf/a/mtd/chan3","gwf/a/mtd/chan4"
-	}; // 0,1
-
+		"gwf/a/mtd/chan2","gwf/a/mtd/chan3","gwf/a/mtd/chan4", // 0,1
+		"gwf/a/mtd/spotA","gwf/a/mtd/spotB","gwf/a/mtd/spotC","gwf/a/mtd/spotD" // hue:0,255
+	}; 
+	
 	// Buttons on the water cannon
 	const String senseCannon[2] = { 
 		"gwf/s/cannon/L", "gwf/s/cannon/R" 

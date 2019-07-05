@@ -11,6 +11,7 @@
 #include <ESPHelperFS.h>
 #include <ESPDMX.h>
 #include <MTD_Hotlantis.h>
+#include <FastLED.h>
 
 // wire it up
 #define FOG_PIN D1
@@ -25,6 +26,30 @@ DMXESPSerial dmx;
 #define DMX_CHAN_C 3 // unassigned?
 #define DMX_CHAN_D 4 // unassigned?
 
+#define DMX_SPOT_A_MASTERB 8
+#define DMX_SPOT_A_RED DMX_SPOT_A_MASTERB+1
+#define DMX_SPOT_A_GRN DMX_SPOT_A_MASTERB+2
+#define DMX_SPOT_A_BLU DMX_SPOT_A_MASTERB+3
+#define DMX_SPOT_A_WHT DMX_SPOT_A_MASTERB+4
+
+#define DMX_SPOT_B_MASTERB 13
+#define DMX_SPOT_B_RED DMX_SPOT_B_MASTERB+1
+#define DMX_SPOT_B_GRN DMX_SPOT_B_MASTERB+2
+#define DMX_SPOT_B_BLU DMX_SPOT_B_MASTERB+3
+#define DMX_SPOT_B_WHT DMX_SPOT_B_MASTERB+4
+
+#define DMX_SPOT_C_MASTERB 18
+#define DMX_SPOT_C_RED DMX_SPOT_C_MASTERB+1
+#define DMX_SPOT_C_GRN DMX_SPOT_C_MASTERB+2
+#define DMX_SPOT_C_BLU DMX_SPOT_C_MASTERB+3
+#define DMX_SPOT_C_WHT DMX_SPOT_C_MASTERB+4
+
+#define DMX_SPOT_D_MASTERB 23
+#define DMX_SPOT_D_RED DMX_SPOT_D_MASTERB+1
+#define DMX_SPOT_D_GRN DMX_SPOT_D_MASTERB+2
+#define DMX_SPOT_D_BLU DMX_SPOT_D_MASTERB+3
+#define DMX_SPOT_D_WHT DMX_SPOT_D_MASTERB+4
+
 void setup() {
   // set them off, then enable pin.
   digitalWrite(FOG_PIN, OFF); 
@@ -36,6 +61,12 @@ void setup() {
   dmx.init();               // initialization for first 32 addresses by default
   //dmx.init(512)           // initialization for complete bus
   delay(200);               // wait a while (not necessary)
+
+  // set up
+  dmx.write(DMX_SPOT_A_MASTERB, 255);        // channal on
+  dmx.write(DMX_SPOT_B_MASTERB, 255);        // channal on
+  dmx.write(DMX_SPOT_C_MASTERB, 255);        // channal on
+  dmx.write(DMX_SPOT_D_MASTERB, 255);        // channal on
 
   // for local output
   Serial.begin(115200);
@@ -60,6 +91,10 @@ void setup() {
   Comms.sub(Comms.actMTDFogBubbleEtc[2]); 
   Comms.sub(Comms.actMTDFogBubbleEtc[3]); 
   Comms.sub(Comms.actMTDFogBubbleEtc[4]); 
+  Comms.sub(Comms.actMTDFogBubbleEtc[5]); 
+  Comms.sub(Comms.actMTDFogBubbleEtc[6]); 
+  Comms.sub(Comms.actMTDFogBubbleEtc[7]); 
+  Comms.sub(Comms.actMTDFogBubbleEtc[8]); 
 
   Serial << F("Startup complete.") << endl;
 }
@@ -95,6 +130,38 @@ void processMessages(String topic, String message) {
     dmx.update();           
   } else if( topic.endsWith("chan4") ) {
     dmx.write(DMX_CHAN_D, setting==ON ? 255 : 0);
+    dmx.update();           
+  } else if( topic.endsWith("spotA") ) {
+    byte hue = message.toInt();
+    CRGB colorRGB = CHSV(hue, 255, 255);  
+    dmx.write(DMX_SPOT_A_RED, colorRGB.red);
+    dmx.write(DMX_SPOT_A_GRN, colorRGB.green);
+    dmx.write(DMX_SPOT_A_BLU, colorRGB.blue);
+    dmx.write(DMX_SPOT_A_WHT, 0);
+    dmx.update();           
+  } else if( topic.endsWith("spotB") ) {
+    byte hue = message.toInt();
+    CRGB colorRGB = CHSV(hue, 255, 255);  
+    dmx.write(DMX_SPOT_B_RED, colorRGB.red);
+    dmx.write(DMX_SPOT_B_GRN, colorRGB.green);
+    dmx.write(DMX_SPOT_B_BLU, colorRGB.blue);
+    dmx.write(DMX_SPOT_B_WHT, 0);
+    dmx.update();           
+  } else if( topic.endsWith("spotC") ) {
+    byte hue = message.toInt();
+    CRGB colorRGB = CHSV(hue, 255, 255);  
+    dmx.write(DMX_SPOT_C_RED, colorRGB.red);
+    dmx.write(DMX_SPOT_C_GRN, colorRGB.green);
+    dmx.write(DMX_SPOT_C_BLU, colorRGB.blue);
+    dmx.write(DMX_SPOT_C_WHT, 0);
+    dmx.update();           
+  } else if( topic.endsWith("spotD") ) {
+    byte hue = message.toInt();
+    CRGB colorRGB = CHSV(hue, 255, 255);  
+    dmx.write(DMX_SPOT_D_RED, colorRGB.red);
+    dmx.write(DMX_SPOT_D_GRN, colorRGB.green);
+    dmx.write(DMX_SPOT_D_BLU, colorRGB.blue);
+    dmx.write(DMX_SPOT_D_WHT, 0);
     dmx.update();           
   }
 }
