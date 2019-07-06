@@ -56,7 +56,7 @@ struct CheatCode_t {
   int track;
 };
 
-#define NUM_CHEATS 32
+#define NUM_CHEATS 33
 CheatCode_t cheats[NUM_CHEATS];
 int activeCheats;
 
@@ -362,8 +362,39 @@ void setColorPalette(byte timeDayOfWeek) {
 void initCheatCodes() {
   int idx = 0;
   setCheat(idx++,"aaabbbc",4); // Test .  2 is beep beep
-  //setCheat(idx++,"aaabbcb",0); // Alan
-  setCheat(idx++,"aabaaca",4);  // Jess
+  
+  setCheat(idx++,"aaabbcb",0); // Alan
+  setCheat(idx++,"aabaaca",4);  // Mike
+  setCheat(idx++,"aababab",4);  // Kyle
+  setCheat(idx++,"aabbbbb",4);  // Brice
+  setCheat(idx++,"aabcabb",4);  // Richie
+  setCheat(idx++,"abaabac",4);  // Dana
+  setCheat(idx++,"abbbabc",4);  // Galvin
+  setCheat(idx++,"acbcbcc",4);  // Eric
+  setCheat(idx++,"accaacb",4);  // Brian
+  setCheat(idx++,"baabaaa",2);  // Dr. Jones
+  setCheat(idx++,"accbaca",4);  // Nils
+  setCheat(idx++,"bababbc",4);  // Jill
+  setCheat(idx++,"baccabb",4);  // Jimmy
+  setCheat(idx++,"bbaaabb",4);  // Jack
+  setCheat(idx++,"bbbccca",4);  // Brittany
+  setCheat(idx++,"bbcabab",4);  // Dan
+  setCheat(idx++,"bcababc",4);  // Marissa
+  setCheat(idx++,"bcabbba",4);  // Tall Patty
+  setCheat(idx++,"bcaccbb",4);  // Jess
+  setCheat(idx++,"bcbbacb",4);  // Alina
+  setCheat(idx++,"bcbbccb",4);  // Sarah
+  setCheat(idx++,"bcbcbab",4);  // Ian
+  setCheat(idx++,"bcccabc",4);  // Matt
+  setCheat(idx++,"cabbbac",4);  // Sam
+  setCheat(idx++,"cabbcca",4);  // Aaron
+  setCheat(idx++,"cacacab",4);  // Ang
+  setCheat(idx++,"caccaca",4);  // Jes
+  setCheat(idx++,"ccabcac",4);  // Gorski
+  setCheat(idx++,"ccaccaa",4);  // Andrea
+  setCheat(idx++,"ccacccb",4);  // Chris
+  setCheat(idx++,"ccbabba",4);  // Peter
+  setCheat(idx++,"cccaaaa",4);  // Hillary
 
   activeCheats = idx;
 }
