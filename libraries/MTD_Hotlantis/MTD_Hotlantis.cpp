@@ -1,7 +1,7 @@
 #include "MTD_Hotlantis.h"
 
 netInfo fieldNet = {
-  .mqttHost = "192.168.4.1",     //can be blank if not using MQTT
+  .mqttHost = "192.168.1.1",     //can be blank if not using MQTT
   .mqttUser = "",   //can be blank
   .mqttPass = "",   //can be blank
   .mqttPort = 1883,   //default port for MQTT is 1883 - only change if needed.
