@@ -1,3 +1,7 @@
+// CRITICAL!!!!!!!!!!
+// Boards -> Boards Manager -> esp8266 -> install version 2.7.4.  
+// Newer WILL fail to compile.
+
 // IDE Settings:
 // Tools->Board : "WeMos D1 R2 & mini"
 // Tools->Flash Size : "4M (1M SPIFFS)"
@@ -27,8 +31,8 @@ void setup() {
   button.attach(PIN_BUTTON, INPUT_PULLUP);
   button.interval(5); // interval in ms
 
-  // bootstrap new microcontrollers, if needed.
-//  Comms.saveStuff("publishTopic", Comms.senseMTDButton[2]);
+  // bootstrap new microcontrollers, if needed. 
+  Comms.saveStuff("publishTopic", Comms.senseMTDButton[2]);
 
   buttonTopic = Comms.loadStuff("publishTopic");
   Serial << "Startup: publishing to topic [" << buttonTopic << "]." << endl;
